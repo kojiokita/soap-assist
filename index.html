@@ -1,0 +1,1012 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>診察SOAPアシスト</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F6F8F7; --card:#FFFFFF; --ink:#1E2A28; --muted:#66756F;
+  --pine:#2F5D50; --pine-soft:#E3ECE8; --rec:#C8372D; --line:#D3DCD8;
+  --warn:#8A5A00; --warn-bg:#FFF4DC; --done:#2E6B3A; --done-bg:#E2F1E5; --edit:#5B4A9E; --edit-bg:#ECE8F7;
+  --font:"BIZ UDPGothic","Hiragino Sans","Noto Sans JP","Yu Gothic",sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--font);font-size:16px;line-height:1.6}
+[hidden]{display:none!important}
+.app{max-width:760px;margin:0 auto;padding:12px 16px 96px}
+header{display:flex;align-items:center;gap:8px;padding:6px 0 12px;flex-wrap:wrap}
+h1{font-size:1.15rem;margin:0 auto 0 0}
+.nav{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.nav button{border:none;background:#fff;font:inherit;padding:7px 14px;color:var(--ink)}
+.nav button[aria-selected="true"]{background:var(--pine);color:#fff}
+.ghost{background:none;border:1px solid var(--line);border-radius:8px;padding:7px 12px;font:inherit;color:var(--ink)}
+.banner{background:var(--warn-bg);color:var(--warn);border-radius:8px;padding:10px 12px;font-size:.86rem;margin-bottom:14px}
+.banner div+div{margin-top:4px}
+section{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:14px}
+h2{font-size:1rem;margin:0 0 12px;display:flex;align-items:center;gap:8px}
+h2 .n{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--pine);color:#fff;font-size:.85rem}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+label{display:block;font-size:.85rem;color:var(--muted)}
+input,select,textarea{width:100%;font:inherit;color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:9px 10px;background:#fff;margin-top:3px}
+textarea{resize:vertical;min-height:72px}
+input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid #9CC3B6;outline-offset:1px}
+.seg{display:inline-flex;border:1px solid var(--pine);border-radius:8px;overflow:hidden;margin-bottom:6px}
+.seg button{border:none;background:#fff;color:var(--pine);font:700 .95rem var(--font);padding:8px 16px}
+.seg button+button{border-left:1px solid var(--pine)}
+.seg button[aria-pressed="true"]{background:var(--pine);color:#fff}
+.more{margin-top:10px;border:1px solid var(--line);border-radius:8px;padding:8px 12px}
+.more summary{cursor:pointer;font-size:.9rem;color:var(--ink)}
+.more summary .sub{margin-left:8px}
+.more[open] summary{margin-bottom:10px}
+.mode-help{font-size:.82rem;color:var(--muted);margin:0 0 12px}
+.rec-row{display:flex;align-items:center;gap:20px}
+#recBtn{width:112px;height:112px;border-radius:50%;border:none;background:var(--pine);color:#fff;font:700 .95rem var(--font);flex-shrink:0;box-shadow:0 0 0 8px var(--pine-soft);line-height:1.3}
+#recBtn.on{background:var(--rec);box-shadow:0 0 0 8px #F6D9D6;animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 14px #F6D9D6}}
+@media (prefers-reduced-motion:reduce){#recBtn.on{animation:none}}
+#timer{font-size:2.4rem;font-variant-numeric:tabular-nums;font-weight:700;line-height:1}
+.level{height:6px;background:var(--pine-soft);border-radius:3px;margin:8px 0 4px;overflow:hidden;width:160px}
+.level i{display:block;height:100%;width:0;background:var(--pine);transition:width .1s}
+.live{margin-top:12px;background:var(--pine-soft);border-radius:8px;padding:8px 10px;font-size:.9rem;max-height:7.5em;overflow:auto;white-space:pre-wrap}
+.live .interim{color:var(--muted)}
+.sub{font-size:.85rem;color:var(--muted)}
+.tip{font-size:.82rem;color:var(--muted);background:var(--pine-soft);border-radius:8px;padding:8px 10px;margin-top:12px}
+.btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.btn{font:700 .92rem var(--font);border-radius:8px;padding:9px 13px;border:1px solid var(--pine);background:#fff;color:var(--pine)}
+.btn.primary{background:var(--pine);color:#fff}
+.btn.small{padding:4px 10px;font-size:.8rem;font-weight:400}
+.btn:disabled{opacity:.45}
+#status{min-height:1.4em;font-size:.9rem;color:var(--pine);margin-top:10px}
+#status.err{color:var(--rec)}
+.res-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin:0 -16px 14px;padding:0 16px;overflow-x:auto}
+.tabs button{border:none;background:none;font:inherit;padding:8px 12px;color:var(--muted);border-bottom:3px solid transparent;white-space:nowrap}
+.tabs button[aria-selected="true"]{color:var(--ink);font-weight:700;border-bottom-color:var(--pine)}
+.badge{font-size:.78rem;border-radius:999px;padding:2px 10px;background:var(--warn-bg);color:var(--warn);white-space:nowrap}
+.badge.done{background:var(--done-bg);color:var(--done)}
+.badge.mode{background:var(--pine-soft);color:var(--pine)}
+.badge.edit{background:var(--edit-bg);color:var(--edit)}
+.chatbox{border:1px dashed var(--pine);border-radius:10px;padding:12px;margin-bottom:14px;background:#FAFCFB}
+.chatbox ol{margin:0 0 4px;padding-left:1.3em;font-size:.88rem}
+.chatbox details{margin-top:8px;font-size:.85rem}
+.chatbox details textarea{font-size:.8rem}
+.soap-block{margin-bottom:12px}
+.soap-block .lh{display:flex;align-items:center;gap:6px;margin-bottom:2px}
+.soap-block .lh span.t{font-weight:700;font-size:.95rem;color:var(--ink);margin-right:auto}
+#bottomBar{position:fixed;left:0;right:0;bottom:0;padding:10px 16px calc(10px + env(safe-area-inset-bottom,0));background:rgba(246,248,247,.96);border-top:1px solid var(--line)}
+#bottomBar .inner{max-width:760px;margin:0 auto;display:flex;gap:8px}
+#bottomBar .btn{flex:1;padding:12px}
+.hist-item{display:block;width:100%;text-align:left;font:inherit;color:var(--ink);background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:8px}
+.hist-top{display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:.85rem;color:var(--muted)}
+.hist-name{font-weight:700;margin:2px 0}
+.hist-snip{font-size:.85rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hist-row{display:flex;gap:6px;align-items:flex-start}
+.hist-row .hist-item{flex:1;min-width:0}
+.empty{color:var(--muted);text-align:center;padding:24px 0}
+dialog{border:none;border-radius:12px;max-width:520px;width:92%;padding:18px;max-height:90vh}
+dialog::backdrop{background:rgba(30,42,40,.45)}
+dialog label{margin-bottom:10px}
+dialog .more label:last-child{margin-bottom:4px}
+.check{display:flex;gap:8px;align-items:center;color:var(--ink)}
+.check input{width:auto;margin:0}
+#printSheet{display:none}
+@media (max-width:420px){#recBtn{width:96px;height:96px}#timer{font-size:2rem}.seg button{padding:8px 12px}}
+@media print{
+  @page{size:A4;margin:14mm}
+  .app,#bottomBar,dialog{display:none!important}
+  body{background:#fff}
+  #printSheet{display:block;font-size:10.5pt;line-height:1.6;color:#000}
+  #printSheet h1{font-size:15pt;margin:0 0 1mm}
+  .ps-head{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:1.5pt solid #000;padding-bottom:2mm;margin-bottom:4mm}
+  .ps-info{display:grid;grid-template-columns:repeat(3,1fr);gap:1mm 6mm;margin-bottom:5mm}
+  .ps-sec{margin-bottom:4mm;break-inside:avoid}
+  .ps-sec h3{font-size:11pt;margin:0 0 1mm;border-left:3pt solid #000;padding-left:2mm}
+  .ps-sec div{white-space:pre-wrap;padding-left:5mm}
+  .ps-body{white-space:pre-wrap;font-size:11pt;line-height:1.85}
+  .ps-foot{margin-top:8mm;border-top:.5pt solid #000;padding-top:2mm;display:flex;justify-content:space-between;gap:6mm;font-size:9pt}
+  .ps-note{font-size:9pt;margin-top:2mm}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>診察SOAPアシスト</h1>
+    <div class="nav" role="tablist">
+      <button role="tab" id="navCase" aria-selected="true">カルテ</button>
+      <button role="tab" id="navHist" aria-selected="false">履歴</button>
+    </div>
+    <button class="ghost" id="settingsBtn">設定</button>
+  </header>
+  <div class="banner" id="banner" role="note"></div>
+
+  <!-- ===== カルテ画面 ===== -->
+  <div id="viewCase">
+    <section>
+      <h2><span class="n">1</span>患者情報</h2>
+      <div class="seg" role="group" aria-label="録音の種別">
+        <button data-mode="問診" aria-pressed="false">問診</button>
+        <button data-mode="診察" aria-pressed="true">診察</button>
+        <button data-mode="口述" aria-pressed="false">口述</button>
+      </div>
+      <p class="mode-help" id="modeHelp"></p>
+      <label>患者名<input id="pName" data-k="name"></label>
+      <details id="pMore" class="more">
+        <summary>詳細（任意）<span class="sub" id="pMoreSum"></span></summary>
+        <div class="grid">
+          <label>動物種<select data-k="species"><option></option><option>犬</option><option>猫</option><option>うさぎ</option><option>フェレット</option><option>鳥</option><option>その他</option></select></label>
+          <label>品種<input data-k="breed"></label>
+          <label>年齢<input data-k="age" placeholder="例：5歳7ヶ月"></label>
+          <label>性別<select data-k="sex"><option></option><option>オス</option><option>去勢オス</option><option>メス</option><option>避妊メス</option></select></label>
+          <label>診療区分<select data-k="category"><option></option><option>初診</option><option>再診</option><option>ワクチン・予防</option><option>健康診断</option><option>処方のみ</option><option>手術・処置</option><option>その他</option></select></label>
+          <label>飼い主名<input data-k="owner"></label>
+          <label>担当獣医師<input data-k="vet"></label>
+        </div>
+      </details>
+      <p class="sub" style="margin:8px 0 0">患者名も含め、すべて空欄のまま録音できます。空欄の項目は印刷物に載りません。</p>
+    </section>
+
+    <section>
+      <h2><span class="n">2</span>録音</h2>
+      <div class="rec-row">
+        <button id="recBtn" aria-pressed="false">録音開始</button>
+        <div>
+          <div id="timer">00:00</div>
+          <div class="level" id="levelWrap" aria-hidden="true"><i id="levelBar"></i></div>
+          <div class="sub" id="recInfo"></div>
+        </div>
+      </div>
+      <div class="live" id="live" aria-live="polite" hidden></div>
+      <div class="btns">
+        <label class="btn" style="display:inline-block">音声ファイルを読み込む<input type="file" id="fileIn" accept="audio/*" hidden></label>
+        <button class="btn" id="reTransBtn" disabled>文字起こしをやり直す</button>
+        <button class="btn" id="dlBtn" disabled>録音を保存</button>
+      </div>
+      <div id="status" role="status"></div>
+      <div class="tip">飼い主さんの声が小さいときは「3日前から吐いているんですね」のように獣医師が復唱すると、SOAPの精度が上がります。</div>
+    </section>
+
+    <section>
+      <div class="res-head">
+        <h2 style="margin:0 auto 0 0"><span class="n">3</span>結果</h2>
+        <span class="badge mode" id="modeBadge">診察</span>
+        <span class="badge" id="statusBadge">下書き</span>
+        <button class="btn small" id="doneBtn">確認済みにする</button>
+      </div>
+      <div class="tabs" role="tablist">
+        <button role="tab" data-tab="soap" aria-selected="true">SOAP</button>
+        <button role="tab" data-tab="trans" aria-selected="false">文字起こし</button>
+        <button role="tab" data-tab="report" aria-selected="false">オーナー向けレポート</button>
+      </div>
+
+      <div data-panel="soap">
+        <div class="chatbox" id="chatSoapBox" data-chat-only>
+          <ol>
+            <li>下のボタンで依頼文をコピーし、<span data-chat-name>Claude</span>を開きます</li>
+            <li><span data-chat-name>Claude</span>の入力欄に貼り付けて送信します</li>
+            <li>返ってきた内容をコピーし、ここに戻って貼り付けます</li>
+          </ol>
+          <div class="btns">
+            <button class="btn primary" id="chatSoapOpen">依頼文をコピーして<span data-chat-name>Claude</span>を開く</button>
+          </div>
+          <textarea id="chatSoapIn" rows="4" placeholder="チャットの返答をここに貼り付け" style="margin-top:10px"></textarea>
+          <div class="btns" style="margin-top:6px">
+            <button class="btn" id="chatSoapPaste">クリップボードから貼り付け</button>
+            <button class="btn primary" id="chatSoapImport">SOAPに取り込む</button>
+          </div>
+          <details id="chatSoapShow"><summary>依頼文を表示（コピーがうまくいかないとき）</summary><textarea id="chatSoapPrompt" rows="6" readonly></textarea></details>
+        </div>
+        <div class="btns" style="margin:0 0 12px">
+          <button class="btn primary" id="soapBtn" data-api-only>SOAPに変換</button>
+          <button class="btn" id="copyAllBtn">SOAPをまとめてコピー</button>
+        </div>
+        <div id="soapFields"></div>
+      </div>
+
+      <div data-panel="trans" hidden>
+        <p class="sub" style="margin:0 0 8px">誤認識はここで直してから「SOAPを作り直す」を押すと、直した内容でSOAPを作り直せます。</p>
+        <textarea id="transcript" rows="12" placeholder="録音を停止すると、ここに文字起こしが入ります。"></textarea>
+        <div class="btns"><button class="btn primary" id="soapBtn2">SOAPを作り直す</button></div>
+      </div>
+
+      <div data-panel="report" hidden>
+        <div class="chatbox" id="chatReportBox" data-chat-only>
+          <ol>
+            <li>下のボタンで依頼文をコピーし、<span data-chat-name>Claude</span>を開いて送信します</li>
+            <li>返ってきたレポートをコピーし、下の欄に貼り付けます</li>
+          </ol>
+          <div class="btns">
+            <button class="btn primary" id="chatReportOpen">依頼文をコピーして<span data-chat-name>Claude</span>を開く</button>
+            <button class="btn" id="chatReportPaste">クリップボードから貼り付け</button>
+          </div>
+          <details id="chatReportShow"><summary>依頼文を表示（コピーがうまくいかないとき）</summary><textarea id="chatReportPrompt" rows="6" readonly></textarea></details>
+        </div>
+        <div class="btns" style="margin:0 0 12px">
+          <button class="btn primary" id="reportBtn" data-api-only>レポートを作成</button>
+          <button class="btn" id="copyReportBtn">コピー</button>
+        </div>
+        <textarea id="report" rows="14" placeholder="SOAPをもとに、飼い主さま向けのわかりやすい説明文を作ります。内容を確認してから印刷してください。"></textarea>
+      </div>
+    </section>
+  </div>
+
+  <!-- ===== 履歴画面 ===== -->
+  <div id="viewHist" hidden>
+    <section>
+      <input id="histSearch" placeholder="患者名・飼い主名・獣医師名で検索" aria-label="履歴を検索">
+      <div class="btns">
+        <select id="histFilter" style="width:auto"><option value="">すべての状態</option><option value="下書き">下書きのみ</option><option value="確認済み">確認済みのみ</option></select>
+        <select id="histNoName" style="width:auto"><option value="">すべて</option><option value="1">患者名が未入力のもの</option></select>
+      </div>
+      <p class="sub">履歴はこの端末のブラウザ内にだけ保存されます（録音データは保存しません）。最新200件まで残ります。</p>
+      <div id="histList"></div>
+      <div class="btns"><button class="btn" id="clearHistBtn">履歴をすべて削除</button></div>
+    </section>
+  </div>
+</div>
+
+<div id="bottomBar"><div class="inner">
+  <button class="btn" id="newBtn">次の患者へ</button>
+  <button class="btn primary" id="printBtn">SOAPを印刷</button>
+</div></div>
+
+<dialog id="settings">
+  <h2>設定</h2>
+  <label>病院名<input id="cfgClinic"></label>
+  <label>病院の電話番号（レポートに印刷）<input id="cfgPhone" inputmode="tel"></label>
+  <label>文字起こしの方法
+    <select id="cfgStt">
+      <option value="browser">ブラウザの音声認識（無料・キー不要・話者の区別なし）</option>
+      <option value="gemini">Gemini 無料API（話者を区別・APIキーが必要）</option>
+    </select>
+  </label>
+  <label>SOAP・レポートの作り方
+    <select id="cfgLlm">
+      <option value="chat">チャットに貼り付け（今の契約や無料版で使える）</option>
+      <option value="gemini">Gemini 無料API（全自動・APIキーが必要）</option>
+      <option value="claude">Claude API（全自動・有料）</option>
+    </select>
+  </label>
+  <label id="cfgChatWrap">貼り付け先のチャット
+    <select id="cfgChat">
+      <option value="claude">Claude</option>
+      <option value="chatgpt">ChatGPT</option>
+      <option value="gemini">Gemini</option>
+    </select>
+  </label>
+  <details class="more" id="cfgKeys">
+    <summary>APIキー（Gemini APIやClaude APIを使う場合のみ）</summary>
+    <label>Gemini APIキー<input id="cfgGeminiKey" type="password" autocomplete="off"></label>
+    <label>Geminiモデル<input id="cfgGeminiModel"></label>
+    <label class="check"><input type="checkbox" id="cfgPaid">Geminiを有料枠に切り替え済み</label>
+    <label style="margin-top:10px">Claude APIキー<input id="cfgClaudeKey" type="password" autocomplete="off"></label>
+    <label>Claudeモデル<input id="cfgClaudeModel"></label>
+    <p class="sub" style="margin:0">キーはこの端末のブラウザ内にだけ保存されます。院外の端末では入力しないでください。</p>
+  </details>
+  <label style="margin-top:10px">無音で自動停止するまでの時間（分、0で無効）<input id="cfgSilence" type="number" min="0" max="30" step="1"></label>
+  <label class="check"><input type="checkbox" id="cfgReportDrugs">オーナー向けレポートに薬剤名・用法を含める</label>
+  <div class="btns"><button class="btn primary" id="cfgSave">保存</button><button class="btn" id="cfgClose">閉じる</button></div>
+</dialog>
+
+<div id="printSheet"></div>
+
+<script>
+const $ = id => document.getElementById(id);
+const store = {
+  get(k, d){ try{ const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; }catch(e){ return d; } },
+  set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); return true; }catch(e){ return false; } }
+};
+const el = (tag, cls, txt) => { const e=document.createElement(tag); if(cls) e.className=cls; if(txt!=null) e.textContent=txt; return e; };
+const fmt = s => String(Math.floor(s/60)).padStart(2,'0')+':'+String(Math.floor(s%60)).padStart(2,'0');
+
+const CHAT = {
+  claude:  {name:'Claude',  url:'https://claude.ai/new'},
+  chatgpt: {name:'ChatGPT', url:'https://chatgpt.com/'},
+  gemini:  {name:'Gemini',  url:'https://gemini.google.com/app'}
+};
+
+/* ================= 設定 ================= */
+const DEF = {clinic:'ウトナイの森動物病院', phone:'', stt:'browser', llm:'chat', chat:'claude',
+             claudeKey:'', claudeModel:'claude-opus-5-5', geminiKey:'', geminiModel:'gemini-2.5-flash',
+             silenceMin:3, reportDrugs:false, paid:false, lastVet:''};
+let cfg = {...DEF, ...store.get('soapAssist.cfg', {})};
+const saveCfg = () => store.set('soapAssist.cfg', cfg);
+
+$('settingsBtn').onclick = () => {
+  $('cfgClinic').value=cfg.clinic; $('cfgPhone').value=cfg.phone;
+  $('cfgStt').value=cfg.stt; $('cfgLlm').value=cfg.llm; $('cfgChat').value=cfg.chat;
+  $('cfgClaudeKey').value=cfg.claudeKey; $('cfgClaudeModel').value=cfg.claudeModel;
+  $('cfgGeminiKey').value=cfg.geminiKey; $('cfgGeminiModel').value=cfg.geminiModel; $('cfgPaid').checked=cfg.paid;
+  $('cfgSilence').value=cfg.silenceMin; $('cfgReportDrugs').checked=cfg.reportDrugs;
+  syncCfgForm(); $('settings').showModal();
+};
+function syncCfgForm(){
+  $('cfgChatWrap').hidden = $('cfgLlm').value !== 'chat';
+  if($('cfgStt').value==='gemini' || $('cfgLlm').value!=='chat') $('cfgKeys').open = true;
+}
+$('cfgStt').onchange = $('cfgLlm').onchange = syncCfgForm;
+$('cfgClose').onclick = () => $('settings').close();
+$('cfgSave').onclick = () => {
+  Object.assign(cfg, {clinic:$('cfgClinic').value.trim(), phone:$('cfgPhone').value.trim(),
+    stt:$('cfgStt').value, llm:$('cfgLlm').value, chat:$('cfgChat').value,
+    claudeKey:$('cfgClaudeKey').value.trim(), claudeModel:$('cfgClaudeModel').value.trim()||DEF.claudeModel,
+    geminiKey:$('cfgGeminiKey').value.trim(), geminiModel:$('cfgGeminiModel').value.trim()||DEF.geminiModel,
+    paid:$('cfgPaid').checked, silenceMin:Math.max(0, Number($('cfgSilence').value)||0), reportDrugs:$('cfgReportDrugs').checked});
+  saveCfg(); $('settings').close(); applyEngineUI(); renderRecInfo(); setStatus('設定を保存しました');
+};
+function setStatus(msg, err=false){ const s=$('status'); s.textContent=msg; s.className=err?'err':''; }
+
+/* 使う方法に合わせて画面を切り替える */
+function applyEngineUI(){
+  const chat = cfg.llm === 'chat';
+  document.querySelectorAll('[data-chat-only]').forEach(e => e.hidden = !chat);
+  document.querySelectorAll('[data-api-only]').forEach(e => e.hidden = chat);
+  document.querySelectorAll('[data-chat-name]').forEach(e => e.textContent = CHAT[cfg.chat].name);
+  $('levelWrap').hidden = cfg.stt === 'browser';
+  $('dlBtn').hidden = $('reTransBtn').hidden = cfg.stt === 'browser' && segments.length === 0;
+  const msgs = [];
+  if(cfg.stt === 'browser') msgs.push('ブラウザの音声認識は、音声をGoogle（iPhoneではApple）のサーバーに送って文字にします。');
+  if(!cfg.paid && (cfg.stt === 'gemini' || cfg.llm === 'gemini')) msgs.push('Gemini無料APIでは、入力した音声やテキストがGoogleのサービス改善に使われます。模擬診察の音声だけで試してください。');
+  if(chat) msgs.push(`${CHAT[cfg.chat].name}の設定画面で、会話をAIの学習に使う項目をオフにしてから使ってください。`);
+  const b = $('banner'); b.innerHTML = ''; msgs.forEach(m => b.append(el('div', null, m))); b.hidden = !msgs.length;
+}
+
+/* ================= カルテ（1件分のデータ） ================= */
+const SOAP_KEYS = [
+  ['S','S 主観的情報'],['O','O 客観的情報'],['A','A 評価'],['P','P 計画'],
+  ['bikou','備考（会計項目候補）'],['memo','確認が必要な点（印刷されません）']
+];
+const MODE_HELP = {
+  '問診':'診察前に看護師などが飼い主さんから聞き取る会話です。S（主観的情報）を中心にまとめます。',
+  '診察':'診察室での獣医師と飼い主さんの会話です。S・O・A・Pすべてをまとめます。',
+  '口述':'診察後に獣医師が一人で所見や方針を話して記録します。周りが静かな場所での録音がおすすめです。'
+};
+function newCase(){
+  return {id: Date.now().toString(36)+Math.random().toString(36).slice(2,6), created:new Date().toISOString(),
+    mode:'診察', status:'下書き', durationSec:0,
+    patient:{name:'',species:'',breed:'',age:'',sex:'',category:'',owner:'',vet:cfg.lastVet||''},
+    transcript:'', soap:{S:'',O:'',A:'',P:'',bikou:'',memo:''}, aiSoap:{}, report:''};
+}
+let cur = newCase();
+let segments = [];   // 現在のカルテの録音Blob（端末メモリ内のみ・保存しない）
+
+$('soapFields').innerHTML = SOAP_KEYS.map(([k,l]) =>
+  `<div class="soap-block"><div class="lh"><span class="t">${l}</span>
+     <span class="badge edit" id="ed_${k}" hidden>編集済み</span>
+     <button class="btn small" data-revert="${k}" hidden>元のAI案に戻す</button>
+     ${k==='memo'?'':`<button class="btn small" data-copy="${k}">コピー</button>`}</div>
+   <textarea id="soap_${k}" rows="${k==='memo'?2:4}" data-soap="${k}" aria-label="${l}"></textarea></div>`).join('');
+
+function render(){
+  document.querySelectorAll('[data-k]').forEach(e => e.value = cur.patient[e.dataset.k] ?? '');
+  SOAP_KEYS.forEach(([k]) => $('soap_'+k).value = cur.soap[k] || '');
+  $('transcript').value = cur.transcript; $('report').value = cur.report;
+  setMode(cur.mode, false); renderStatus(); renderRecInfo(); renderEdited(); renderMoreSum();
+  $('reTransBtn').disabled = $('dlBtn').disabled = segments.length === 0;
+  applyEngineUI();
+}
+function renderEdited(){
+  SOAP_KEYS.forEach(([k]) => {
+    const edited = cur.aiSoap && k in cur.aiSoap && (cur.soap[k]||'') !== (cur.aiSoap[k]||'');
+    $('ed_'+k).hidden = !edited;
+    document.querySelector(`[data-revert="${k}"]`).hidden = !edited;
+  });
+}
+function renderStatus(){
+  const done = cur.status === '確認済み';
+  $('statusBadge').textContent = cur.status; $('statusBadge').classList.toggle('done', done);
+  $('doneBtn').textContent = done ? '下書きに戻す' : '確認済みにする';
+}
+function renderRecInfo(){
+  if(recording) return;
+  const n = segments.length;
+  $('recBtn').textContent = (n || cur.transcript) ? '録音を追加' : '録音開始';
+  const next = cfg.llm === 'chat' ? '停止したら、SOAPタブのボタンからチャットに依頼します。' : '停止すると、SOAP作成まで自動で進みます。';
+  $('recInfo').textContent = cur.durationSec
+    ? `録音合計 ${fmt(cur.durationSec)}。検査結果の説明や口述は「録音を追加」で同じカルテに足せます。`
+    : next;
+}
+
+let saveTimer=null;
+function touch(){ clearTimeout(saveTimer); saveTimer = setTimeout(saveCase, 600); }
+document.querySelectorAll('[data-k]').forEach(e => e.addEventListener('input', () => {
+  cur.patient[e.dataset.k] = e.value;
+  if(e.dataset.k === 'vet'){ cfg.lastVet = e.value; saveCfg(); }
+  renderMoreSum(); touch();
+}));
+document.querySelectorAll('[data-soap]').forEach(e => e.addEventListener('input', () => { cur.soap[e.dataset.soap] = e.value; renderEdited(); touch(); }));
+$('transcript').addEventListener('input', e => { cur.transcript = e.target.value; touch(); });
+$('report').addEventListener('input', e => { cur.report = e.target.value; touch(); });
+
+function hasContent(c){ return c.transcript || c.patient.name || Object.values(c.soap).some(Boolean) || c.report; }
+function saveCase(){
+  if(!hasContent(cur)) return;
+  const list = store.get('soapAssist.history', []).filter(c => c.id !== cur.id);
+  list.unshift({...cur, updated:new Date().toISOString()});
+  if(!store.set('soapAssist.history', list.slice(0,200))) setStatus('端末の保存容量が不足しています。履歴を整理してください。', true);
+}
+
+function setMode(m, save=true){
+  cur.mode = m;
+  document.querySelectorAll('[data-mode]').forEach(b => b.setAttribute('aria-pressed', b.dataset.mode===m));
+  $('modeBadge').textContent = m; $('modeHelp').textContent = MODE_HELP[m];
+  if(save) touch();
+}
+document.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => setMode(b.dataset.mode));
+$('doneBtn').onclick = () => { cur.status = cur.status==='確認済み' ? '下書き' : '確認済み'; renderStatus(); saveCase(); };
+
+let activeTab = 'soap';
+document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => showTab(b.dataset.tab));
+function showTab(t){
+  activeTab = t;
+  document.querySelectorAll('.tabs button').forEach(b => b.setAttribute('aria-selected', b.dataset.tab===t));
+  document.querySelectorAll('[data-panel]').forEach(p => p.hidden = p.dataset.panel !== t);
+  $('printBtn').textContent = t==='report' ? 'レポートを印刷' : 'SOAPを印刷';
+}
+
+/* ================= コピー・貼り付け ================= */
+function copySync(text){
+  const ta = document.createElement('textarea');
+  ta.value = text; ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0;font-size:16px';
+  document.body.append(ta); ta.focus(); ta.select(); ta.setSelectionRange(0, text.length);
+  let ok = false; try{ ok = document.execCommand('copy'); }catch(e){}
+  ta.remove(); return ok;
+}
+async function copyText(text, label){
+  let ok = false;
+  try{ await navigator.clipboard.writeText(text); ok = true; }catch(e){ ok = copySync(text); }
+  setStatus(ok ? `${label}をコピーしました` : 'コピーできませんでした。長押しで選択してコピーしてください。', !ok);
+}
+async function readClipboard(){
+  try{ return await navigator.clipboard.readText(); }
+  catch(e){ setStatus('クリップボードを読み取れませんでした。欄を長押しして「貼り付け」を選んでください。', true); return null; }
+}
+const soapText = () => SOAP_KEYS.filter(([k]) => k!=='memo').map(([k,l]) => `【${l}】\n${cur.soap[k]||'記載なし'}`).join('\n\n');
+$('soapFields').addEventListener('click', e => {
+  const c = e.target.dataset.copy, r = e.target.dataset.revert;
+  if(c) copyText(cur.soap[c]||'', SOAP_KEYS.find(x=>x[0]===c)[1]);
+  if(r){ cur.soap[r] = cur.aiSoap[r] || ''; $('soap_'+r).value = cur.soap[r]; renderEdited(); saveCase(); setStatus('AIの案に戻しました'); }
+});
+$('copyAllBtn').onclick = () => copyText(soapText(), 'SOAP');
+$('copyReportBtn').onclick = () => copyText(cur.report, 'レポート');
+
+/* ================= 録音 ================= */
+let recording=false, recKind=null, t0=0, stopAt=0, tick=null, wakeLock=null, lastVoice=0, autoStopped=false;
+let rec=null, chunks=[], stream=null, ac=null, analyser=null;           // Gemini用（録音ファイルを作る）
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;  // ブラウザ音声認識
+let srec=null, srFinal='', srFatal=false, srDone=false;
+
+$('recBtn').onclick = () => recording ? stopRec() : startRec();
+
+async function startRec(){
+  if(busy){ setStatus('処理中です。終わってから録音してください。', true); return; }
+  autoStopped = false;
+  const ok = cfg.stt === 'browser' ? startBrowserRec() : await startMediaRec();
+  if(!ok) return;
+  recKind = cfg.stt === 'browser' ? 'browser' : 'media';
+  recording = true; t0 = lastVoice = Date.now();
+  tick = setInterval(onTick, 250); onTick();
+  $('recBtn').classList.add('on'); $('recBtn').textContent='停止'; $('recBtn').setAttribute('aria-pressed','true');
+  setStatus(`${cur.mode}を録音中です。画面を開いたままにしてください。`);
+  $('recInfo').textContent = cfg.silenceMin>0 ? `無音が${cfg.silenceMin}分続くと自動で停止します。` : '';
+  try{ wakeLock = await navigator.wakeLock?.request('screen'); }catch(e){}
+}
+
+async function startMediaRec(){
+  try{ stream = await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true, noiseSuppression:true}}); }
+  catch(e){ setStatus('マイクを使えません。HTTPSで開いているか、ブラウザのマイク許可を確認してください。', true); return false; }
+  const mime = ['audio/webm;codecs=opus','audio/mp4','audio/webm'].find(m => window.MediaRecorder && MediaRecorder.isTypeSupported(m));
+  rec = new MediaRecorder(stream, mime ? {mimeType:mime} : undefined);
+  chunks = [];
+  rec.ondataavailable = e => { if(e.data.size) chunks.push(e.data); };
+  rec.onstop = () => {
+    stream.getTracks().forEach(t=>t.stop());
+    try{ ac && ac.close(); }catch(e){} ac = analyser = null; $('levelBar').style.width='0';
+    addAudio(new Blob(chunks, {type: rec.mimeType || 'audio/webm'}), (stopAt-t0)/1000);
+  };
+  try{
+    ac = new (window.AudioContext||window.webkitAudioContext)();
+    analyser = ac.createAnalyser(); analyser.fftSize = 1024;
+    ac.createMediaStreamSource(stream).connect(analyser);
+  }catch(e){ analyser = null; }
+  rec.start(1000);
+  return true;
+}
+
+function startBrowserRec(){
+  if(!SR){
+    setStatus('このブラウザは音声認識に対応していません。AndroidやPCはChrome、iPhoneはSafariで開いてください。', true);
+    return false;
+  }
+  srFinal = ''; srFatal = false; srDone = false;
+  srec = new SR(); srec.lang = 'ja-JP'; srec.continuous = true; srec.interimResults = true;
+  srec.onresult = e => {
+    lastVoice = Date.now();
+    let interim = '';
+    for(let i=e.resultIndex; i<e.results.length; i++){
+      const r = e.results[i];
+      if(r.isFinal) srFinal += r[0].transcript.trim() + '\n';
+      else interim += r[0].transcript;
+    }
+    showLive(interim);
+  };
+  srec.onerror = e => {
+    if(e.error === 'not-allowed' || e.error === 'service-not-allowed' || e.error === 'audio-capture'){
+      srFatal = true;
+      setStatus('マイクまたは音声認識を使えません。HTTPSで開いているか、ブラウザのマイク許可を確認してください。', true);
+      if(recording) stopRec();
+    }
+  };
+  // 音声認識は数十秒〜数分で自動的に切れるため、録音中は再開し続ける
+  srec.onend = () => {
+    if(recording && !srFatal){
+      try{ srec.start(); }catch(_){ setTimeout(() => { if(recording){ try{ srec.start(); }catch(__){} } }, 300); }
+    }else finishBrowserRec();
+  };
+  try{ srec.start(); }catch(e){ setStatus('音声認識を開始できませんでした。ページを再読み込みしてください。', true); return false; }
+  $('live').hidden = false; $('live').textContent = '話し始めると、ここに文字が出ます。';
+  return true;
+}
+function showLive(interim){
+  const box = $('live'); box.textContent = srFinal.slice(-240);
+  if(interim){ const s = el('span','interim',interim); box.append(s); }
+  box.scrollTop = box.scrollHeight;
+}
+
+const lvl = new Float32Array(1024);
+function onTick(){
+  const now = Date.now();
+  $('timer').textContent = fmt((now-t0)/1000);
+  if(analyser){
+    analyser.getFloatTimeDomainData(lvl);
+    let sum=0; for(let i=0;i<lvl.length;i++) sum += lvl[i]*lvl[i];
+    const rms = Math.sqrt(sum/lvl.length);
+    $('levelBar').style.width = Math.min(100, rms*600) + '%';
+    if(rms > 0.01) lastVoice = now;
+  }
+  if(cfg.silenceMin > 0 && now - lastVoice > cfg.silenceMin*60000){ autoStopped = true; stopRec(); }
+}
+
+function stopRec(){
+  if(!recording) return;
+  recording = false; stopAt = Date.now(); clearInterval(tick);
+  $('recBtn').classList.remove('on'); $('recBtn').setAttribute('aria-pressed','false');
+  try{ wakeLock?.release(); }catch(e){} wakeLock=null;
+  if(recKind === 'browser'){
+    try{ srec.stop(); }catch(e){}
+    setTimeout(finishBrowserRec, 2500);   // onend が来ない機種への保険
+  }else if(rec && rec.state === 'recording') rec.stop();
+}
+
+function finishBrowserRec(){
+  if(srDone || recording) return;
+  srDone = true; $('live').hidden = true;
+  cur.durationSec += (stopAt - t0)/1000;
+  const text = srFinal.trim();
+  if(!text){
+    if(!srFatal) setStatus('音声を文字にできませんでした。マイクに近づいて、もう一度録音してください。', true);
+    renderRecInfo(); return;
+  }
+  appendTranscript(text, '（ブラウザ音声認識・話者の区別なし）');
+  if(autoStopped) setStatus(`無音が${cfg.silenceMin}分続いたため録音を停止しました。`);
+  afterTranscript();
+}
+
+function appendTranscript(text, note=''){
+  const header = `―― ${cur.mode}録音 ${new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'})}${note} ――`;
+  cur.transcript = (cur.transcript ? cur.transcript+'\n\n' : '') + header + '\n' + text;
+  $('transcript').value = cur.transcript; saveCase(); renderRecInfo();
+}
+
+function afterTranscript(){
+  if(cfg.llm === 'chat'){
+    showTab('soap'); prepareChatPrompt('soap');
+    setStatus(`文字起こしができました。SOAPタブの「依頼文をコピーして${CHAT[cfg.chat].name}を開く」を押してください。`);
+    $('chatSoapOpen').scrollIntoView({behavior:'smooth', block:'center'});
+  }else makeSoap();
+}
+
+function addAudio(blob, sec){
+  segments.push(blob); cur.durationSec += sec || 0;
+  renderRecInfo(); $('reTransBtn').disabled = $('dlBtn').disabled = false; applyEngineUI();
+  if(autoStopped) setStatus(`無音が${cfg.silenceMin}分続いたため録音を停止しました。続けて文字起こしします。`);
+  transcribeAudio([blob]);
+}
+$('fileIn').onchange = async e => {
+  const f = e.target.files[0]; e.target.value=''; if(!f) return;
+  if(!cfg.geminiKey){ setStatus('音声ファイルの文字起こしにはGemini APIキーが必要です。設定で入力してください。', true); return; }
+  const sec = await new Promise(r => { const a=new Audio(URL.createObjectURL(f)); a.onloadedmetadata=()=>r(isFinite(a.duration)?a.duration:0); a.onerror=()=>r(0); });
+  autoStopped = false; addAudio(f, sec);
+};
+$('reTransBtn').onclick = () => {
+  if(!confirm('文字起こしを最初からやり直します。手で直した文字起こしは消えます。よろしいですか？')) return;
+  cur.transcript=''; $('transcript').value=''; transcribeAudio(segments);
+};
+$('dlBtn').onclick = () => {
+  segments.forEach((b, i) => {
+    const ext = (b.type.includes('mp4')?'m4a':b.type.includes('wav')?'wav':b.type.includes('mpeg')?'mp3':'webm');
+    const a = document.createElement('a'); a.href = URL.createObjectURL(b);
+    a.download = `${(cur.patient.name||'録音').replace(/[\\/:*?"<>|]/g,'')}_${new Date(cur.created).toISOString().slice(0,10)}_${i+1}.${ext}`;
+    document.body.append(a); a.click(); a.remove();
+  });
+};
+
+/* ================= 音声変換（16kHzモノラルWAV、5分ごとに分割） ================= */
+async function toWavChunks(blob, chunkSec=300){
+  const AC = window.AudioContext || window.webkitAudioContext;
+  const ctx = new AC();
+  const decoded = await ctx.decodeAudioData(await blob.arrayBuffer());
+  ctx.close();
+  const rate = 16000;
+  const off = new OfflineAudioContext(1, Math.max(1, Math.ceil(decoded.duration*rate)), rate);
+  const src = off.createBufferSource(); src.buffer = decoded; src.connect(off.destination); src.start();
+  const data = (await off.startRendering()).getChannelData(0);
+  const per = chunkSec*rate, out = [];
+  for(let i=0;i<data.length;i+=per) out.push(encodeWav(data.subarray(i, Math.min(i+per, data.length)), rate));
+  return out;
+}
+function encodeWav(samples, rate){
+  const b = new ArrayBuffer(44 + samples.length*2), v = new DataView(b);
+  const w = (o,s) => { for(let i=0;i<s.length;i++) v.setUint8(o+i, s.charCodeAt(i)); };
+  w(0,'RIFF'); v.setUint32(4, 36+samples.length*2, true); w(8,'WAVE'); w(12,'fmt ');
+  v.setUint32(16,16,true); v.setUint16(20,1,true); v.setUint16(22,1,true); v.setUint32(24,rate,true);
+  v.setUint32(28,rate*2,true); v.setUint16(32,2,true); v.setUint16(34,16,true); w(36,'data'); v.setUint32(40, samples.length*2, true);
+  for(let i=0;i<samples.length;i++){ const s=Math.max(-1,Math.min(1,samples[i])); v.setInt16(44+i*2, s<0?s*0x8000:s*0x7FFF, true); }
+  return new Blob([b], {type:'audio/wav'});
+}
+const toB64 = blob => new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result.split(',')[1]); r.onerror=rej; r.readAsDataURL(blob); });
+
+/* ================= API呼び出し ================= */
+async function apiError(name, res){
+  const body = (await res.text()).slice(0,200);
+  if(res.status === 429) return new Error(`${name}の無料枠の回数上限に達しました。しばらく待つか、設定で「チャットに貼り付け」に切り替えてください。`);
+  if(res.status === 400 || res.status === 401 || res.status === 403) return new Error(`${name}のAPIキーかモデル名を確認してください（${res.status}）。`);
+  return new Error(`${name} ${res.status}: ${body}`);
+}
+async function geminiRequest(body){
+  if(!cfg.geminiKey) throw new Error('設定でGemini APIキーを入力してください（Google AI Studioで無料で発行できます）。');
+  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(cfg.geminiModel)}:generateContent`, {
+    method:'POST', headers:{'Content-Type':'application/json','x-goog-api-key':cfg.geminiKey}, body: JSON.stringify(body)
+  });
+  if(!res.ok) throw await apiError('Gemini', res);
+  const j = await res.json();
+  return (j.candidates?.[0]?.content?.parts||[]).map(p=>p.text||'').join('').trim();
+}
+async function callClaude(system, user, maxTokens=4000){
+  if(!cfg.claudeKey) throw new Error('設定でClaude APIキーを入力してください。');
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method:'POST',
+    headers:{'content-type':'application/json','x-api-key':cfg.claudeKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+    body: JSON.stringify({model:cfg.claudeModel, max_tokens:maxTokens, system, messages:[{role:'user', content:user}]})
+  });
+  if(!res.ok) throw await apiError('Claude', res);
+  const j = await res.json();
+  return (j.content||[]).filter(c=>c.type==='text').map(c=>c.text).join('');
+}
+function callLLM(system, user, {json=false, maxTokens=4000}={}){
+  if(cfg.llm === 'gemini') return geminiRequest({
+    systemInstruction:{parts:[{text:system}]}, contents:[{role:'user', parts:[{text:user}]}],
+    generationConfig:{temperature:0.2, ...(json ? {responseMimeType:'application/json'} : {})}
+  });
+  return callClaude(system, user, maxTokens);
+}
+
+/* ================= Gemini：音声の文字起こし ================= */
+function transcribePart(b64, idx, total, prevTail){
+  const who = cur.mode==='口述' ? '獣医師が一人で所見や方針を話した口述記録' : '獣医師（または動物看護師）と飼い主の会話';
+  const prompt =
+`これは日本の動物病院で録音した、${who}${total>1?`（全${total}区間中の第${idx}区間）`:''}です。
+日本語で逐語的に文字起こししてください。
+・発話ごとに改行し、行頭に【獣医師】【看護師】【飼い主】のいずれかを付ける（判別できなければ【不明】）
+・獣医学用語、薬剤名、検査値、数値と単位は正確に書く
+・聞き取れない箇所は（聞き取り不可）と書き、推測で補わない
+・文字起こし以外の説明や前置きは書かない${prevTail?`\n直前の区間の末尾は次のとおりです（話者判定の参考のみ。繰り返さない）：\n${prevTail}`:''}`;
+  return geminiRequest({contents:[{parts:[{text:prompt},{inline_data:{mime_type:'audio/wav', data:b64}}]}], generationConfig:{temperature:0}});
+}
+
+let busy = false;
+async function transcribeAudio(blobs){
+  if(busy){ setStatus('処理中です。終わってからもう一度お試しください。', true); return; }
+  busy = true; $('reTransBtn').disabled = true;
+  try{
+    for(let b=0;b<blobs.length;b++){
+      setStatus('音声を変換しています…');
+      const parts = await toWavChunks(blobs[b]);
+      let text = '';
+      for(let i=0;i<parts.length;i++){
+        setStatus(`文字起こし中… ${blobs.length>1?`録音${b+1}／`:''}${i+1}/${parts.length}`);
+        text += (text?'\n':'') + await transcribePart(await toB64(parts[i]), i+1, parts.length, text.slice(-300));
+      }
+      appendTranscript(text);
+    }
+  }catch(err){ setStatus('文字起こしに失敗しました：'+err.message, true); return; }
+  finally{ busy = false; $('reTransBtn').disabled = segments.length===0; renderRecInfo(); }
+  afterTranscript();
+}
+
+/* ================= SOAPの指示文 ================= */
+const P_LABELS = [['name','患者名'],['species','動物種'],['breed','品種'],['age','年齢'],['sex','性別'],['category','診療区分'],['owner','飼い主'],['vet','担当獣医師']];
+function patientLine(){
+  const items = P_LABELS.filter(([k]) => k!=='owner' && k!=='vet' && cur.patient[k]).map(([k,l]) => `${l} ${cur.patient[k]}`);
+  return items.length ? `患者情報：${items.join('／')}` : '患者情報：未入力（会話から読み取れる範囲で扱う）';
+}
+function renderMoreSum(){
+  const filled = P_LABELS.filter(([k]) => k!=='name' && cur.patient[k]).map(([k]) => cur.patient[k]);
+  $('pMoreSum').textContent = filled.length ? filled.join('・') : '';
+}
+
+const SOAP_BODY =
+`あなたは動物病院のカルテ作成を補助する獣医療記録アシスタントです。文字起こしから、獣医師が確認・修正する前提のSOAP下書きを作ります。
+共通の規則：
+・会話で実際に述べられた内容だけを使う。述べられていない所見、診断、薬用量を推測で補わない
+・獣医師が確認したうえで「異常なし」「心雑音なし」「嘔吐はない」などと述べた所見は、陰性所見として省略せずに必ず記載する。話題に出なかった項目は書かない
+・該当する内容がまったくないセクションは「記載なし」とする
+・獣医学の専門用語を使い、各行は「- 」で始める。可能なら「- 項目名: 内容」の形にする
+・文字起こしに話者ラベルがない場合は、文脈から獣医師と飼い主の発言を推定する。誰の発言かで意味が変わるのに推定できない箇所は memo に書く
+・音声認識による同音異義語や薬剤名の誤変換は、文脈から明らかな場合だけ直し、直した箇所を memo に書く
+・文字起こしに複数回の録音（問診・診察・口述など）が含まれる場合は、すべてを統合して1つのSOAPにする。内容が食い違う場合は後の録音と獣医師の発言を優先し、食い違いを memo に書く
+・次のものは推測・断定せず、S〜Pに入れずに memo へ回す：他院で処方された薬の扱い、明確な指示がなかった保留事項、飼い主の発言が聞き取れず意味が確定しない部分
+・bikou：会計漏れ防止のため、実施した（または当日実施すると決まった）処置・検査と処方を次の形式で列挙する。なければ「なし」
+  【会計項目候補】
+  [処置/検査] 項目, 項目
+  [処方] 薬剤名 用量 日数
+・memo：上記の保留事項に加え、聞き取りが曖昧な箇所、数値や薬剤名の誤認識が疑われる箇所など、獣医師が確認すべき点`;
+
+const SOAP_RULES = {
+'診察': `
+診察録音の規則：
+・S：主訴、発症時期と経過、食欲、元気・活動性、飲水、排尿、排便、嘔吐・下痢、既往歴、現在の投薬など、飼い主の話のうち述べられたもの
+・O：身体検査所見（陰性所見を含む）、BW、T、HR、RR、検査結果など。数値と単位は会話どおり
+・A：獣医師が口頭で述べた評価、鑑別診断、重症度のみ
+・P：検査計画、処方（薬剤名、用量、投与経路、回数、日数）、処置、再診・フォロー、飼い主への指導`,
+'問診': `
+問診録音の規則（診察前に看護師などが聞き取った会話）：
+・S を中心にまとめる：主訴、発症時期、経過、食欲、元気・活動性、飲水、排尿、排便、嘔吐・下痢、既往歴、現在の投薬・サプリ、ワクチン・予防歴、生活環境の変化など
+・O は測定値（BWなど）が会話に出た場合だけ書く
+・A と P は原則「記載なし」。ただし飼い主の要望（検査希望など）があれば P に「- 飼い主の希望: 〜」として書く`,
+'口述': `
+口述録音の規則（診察後に獣医師が一人で話した記録）：
+・獣医師の発言はすべて確定した記録として扱い、S・O・A・P に振り分ける
+・言い直しや訂正があった場合は、最後に述べた内容を採用する
+・「Sは〜」「所見は〜」のように獣医師がセクションを指定した場合は、その指定に従う`
+};
+const JSON_SHAPE = '{"S":"","O":"","A":"","P":"","bikou":"","memo":""}';
+const OUT_API  = `\n出力はJSONのみ。前置きやコードフェンスは付けない。各値の改行は \\n で表す。形式：${JSON_SHAPE}`;
+const OUT_CHAT = `\n出力は次の形式のJSONを、\`\`\`json で始まるコードブロック1つだけで返す。前置き・説明・感想は書かない。各値の改行は \\n で表す。形式：${JSON_SHAPE}`;
+const soapUser = () => `${patientLine()}\n\n文字起こし：\n${cur.transcript}`;
+
+const reportSys = () =>
+`あなたは動物病院のスタッフとして、飼い主さま向けに本日の診察内容をまとめた説明文を書きます。A4用紙1枚に収まる分量にします。
+規則：
+・入力のSOAPに書かれた内容だけを使う。書かれていない診断、予後、薬の効果を付け加えない
+・ペットの名前は「〇〇ちゃん」と書く（名前が未入力なら「この子」と書く）
+・専門用語は飼い主さまにわかる言葉に言い換える（必要なら括弧で元の用語を添える）
+・丁寧でやさしい「です・ます」調。不安をあおらず、事実を正確に伝える
+・会計項目、確認事項、スタッフ向けの内容は書かない
+${cfg.reportDrugs
+  ? '・お薬は、薬剤名と飲ませ方（回数・日数）をSOAPどおりに書く'
+  : '・処方薬の名前や用法・用量は書かない。お薬が出た場合は「お薬の飲ませ方は、お渡しした説明書をご確認ください。」とだけ書く'}
+・次の見出しで構成する。SOAPに該当する内容がない見出しは、見出しごと省く：
+  【本日の診察について】【検査・処置の内容】【お薬について】【ご自宅でのケア】【こんな様子が見られたらご連絡ください】【次回のご来院】
+・マークダウン記号（#、*、**）は使わず、プレーンテキストで出力する`;
+const reportUser = () => `${patientLine()}\n\nSOAP：\n${['S','O','A','P'].map(k => `${k}:\n${cur.soap[k]||'記載なし'}`).join('\n\n')}`;
+const hasSoap = () => ['S','O','A','P'].some(k => (cur.soap[k]||'').trim() && cur.soap[k].trim()!=='記載なし');
+
+function chatPrompt(kind){
+  if(kind === 'soap')
+    return `# 指示\n${SOAP_BODY}${SOAP_RULES[cur.mode]}${OUT_CHAT}\n\n# 入力\n${soapUser()}`;
+  return `# 指示\n${reportSys()}\n・出力はレポート本文だけにし、前置きや説明は書かない\n\n# 入力\n${reportUser()}`;
+}
+function prepareChatPrompt(kind){
+  const t = chatPrompt(kind);
+  $(kind==='soap' ? 'chatSoapPrompt' : 'chatReportPrompt').value = t;
+  return t;
+}
+
+/* ================= 返答の読み取り ================= */
+function fixJsonNewlines(s){
+  let out='', inStr=false, esc=false;
+  for(const ch of s){
+    if(inStr){
+      if(esc){ esc=false; out+=ch; continue; }
+      if(ch==='\\'){ esc=true; out+=ch; continue; }
+      if(ch==='"'){ inStr=false; out+=ch; continue; }
+      if(ch==='\n'){ out+='\\n'; continue; }
+      if(ch==='\r') continue;
+      if(ch==='\t'){ out+='\\t'; continue; }
+      out+=ch;
+    }else{ if(ch==='"') inStr=true; out+=ch; }
+  }
+  return out;
+}
+function parseSoap(text){
+  const t = text.replace(/```(?:json)?/gi, '').replace(/[“”]/g, '"');
+  const s = t.indexOf('{'), e = t.lastIndexOf('}');
+  if(s < 0 || e <= s) throw new Error('JSONが見つかりません');
+  const raw = t.slice(s, e+1);
+  let obj; try{ obj = JSON.parse(raw); }catch(_){ obj = JSON.parse(fixJsonNewlines(raw)); }
+  if(!['S','O','A','P'].some(k => k in obj)) throw new Error('SOAPの項目がありません');
+  return obj;
+}
+function applySoap(obj){
+  SOAP_KEYS.forEach(([k]) => cur.soap[k] = (obj[k] ?? '').toString().trim());
+  cur.aiSoap = {...cur.soap}; cur.status = '下書き';
+  render(); saveCase(); showTab('soap');
+  setStatus('SOAP下書きができました。内容を確認・修正し、問題なければ「確認済みにする」を押してください。');
+}
+const stripMd = t => t.replace(/^```[a-z]*\s*|```\s*$/gim, '').replace(/\*\*(.+?)\*\*/g, '$1').replace(/^#{1,6}\s*/gm, '').trim();
+
+/* ================= SOAP作成 ================= */
+function confirmRegen(){
+  const edited = SOAP_KEYS.some(([k]) => cur.aiSoap && k in cur.aiSoap && (cur.soap[k]||'') !== (cur.aiSoap[k]||''));
+  return !edited || confirm('手で編集したSOAPは、作り直すと上書きされます。よろしいですか？');
+}
+async function makeSoap(){
+  if(!cur.transcript.trim()){ setStatus('文字起こしが空です。録音するか、文字起こし欄に入力してください。', true); return; }
+  if(busy) return;
+  busy = true; setStatus('SOAPに変換しています…'); $('soapBtn').disabled = $('soapBtn2').disabled = true;
+  try{
+    applySoap(parseSoap(await callLLM(SOAP_BODY + SOAP_RULES[cur.mode] + OUT_API, soapUser(), {json:true})));
+  }catch(err){ setStatus('SOAP変換に失敗しました：'+err.message, true); }
+  finally{ busy = false; $('soapBtn').disabled = $('soapBtn2').disabled = false; }
+}
+$('soapBtn').onclick = () => { if(confirmRegen()) makeSoap(); };
+$('soapBtn2').onclick = () => {
+  cur.transcript = $('transcript').value;
+  if(cfg.llm === 'chat'){ afterTranscript(); return; }
+  if(confirmRegen()) makeSoap();
+};
+
+/* チャット連携：依頼文をコピーしてチャットを開く */
+function copyAndOpen(text, what){
+  const name = CHAT[cfg.chat].name;
+  const ok = copySync(text);
+  if(!ok && navigator.clipboard){
+    navigator.clipboard.writeText(text)
+      .then(() => setStatus(`${what}をコピーしました。${name}に貼り付けて送信してください。`))
+      .catch(() => setStatus('コピーできませんでした。「依頼文を表示」を開いて、長押しでコピーしてください。', true));
+  }
+  window.open(CHAT[cfg.chat].url, '_blank', 'noopener');
+  if(ok) setStatus(`${what}をコピーしました。${name}に貼り付けて送信してください。`);
+}
+$('chatSoapOpen').onclick = () => {
+  cur.transcript = $('transcript').value;
+  if(!cur.transcript.trim()){ setStatus('文字起こしが空です。先に録音してください。', true); return; }
+  copyAndOpen(prepareChatPrompt('soap'), 'SOAPの依頼文');
+};
+$('chatSoapShow').addEventListener('toggle', () => { if($('chatSoapShow').open) prepareChatPrompt('soap'); });
+$('chatSoapPaste').onclick = async () => { const t = await readClipboard(); if(t != null) $('chatSoapIn').value = t; };
+$('chatSoapImport').onclick = () => {
+  const t = $('chatSoapIn').value.trim();
+  if(!t){ setStatus('チャットの返答を貼り付けてください。', true); return; }
+  if(!confirmRegen()) return;
+  try{ applySoap(parseSoap(t)); $('chatSoapIn').value = ''; }
+  catch(e){ setStatus('返答を読み取れませんでした。返答の { から } までを、まるごとコピーして貼り付けてください。', true); }
+};
+
+/* ================= オーナー向けレポート ================= */
+$('reportBtn').onclick = async () => {
+  if(!hasSoap()){ setStatus('先にSOAPを作成してください。', true); return; }
+  if(cur.report.trim() && !confirm('作成済みのレポートを作り直します。手で直した内容は上書きされます。よろしいですか？')) return;
+  setStatus('オーナー向けレポートを作成しています…'); $('reportBtn').disabled = true;
+  try{
+    cur.report = stripMd(await callLLM(reportSys(), reportUser(), {maxTokens:2500}));
+    $('report').value = cur.report; saveCase();
+    setStatus('レポートができました。内容を確認してから印刷してください。');
+  }catch(err){ setStatus('レポート作成に失敗しました：'+err.message, true); }
+  finally{ $('reportBtn').disabled = false; }
+};
+$('chatReportOpen').onclick = () => {
+  if(!hasSoap()){ setStatus('先にSOAPを作成してください。', true); return; }
+  copyAndOpen(prepareChatPrompt('report'), 'レポートの依頼文');
+};
+$('chatReportShow').addEventListener('toggle', () => { if($('chatReportShow').open) prepareChatPrompt('report'); });
+$('chatReportPaste').onclick = async () => {
+  const t = await readClipboard(); if(t == null) return;
+  if(cur.report.trim() && !confirm('作成済みのレポートを貼り付けた内容で置き換えます。よろしいですか？')) return;
+  cur.report = stripMd(t); $('report').value = cur.report; saveCase();
+  setStatus('レポートを貼り付けました。内容を確認してから印刷してください。');
+};
+
+/* ================= 印刷 ================= */
+const caseDate = () => new Date(cur.created).toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric',weekday:'short'});
+$('printBtn').onclick = () => {
+  const ps = $('printSheet'); ps.innerHTML = '';
+  const p = cur.patient;
+  if(activeTab === 'report'){
+    if(!cur.report.trim()){ setStatus('先にレポートを作成してください。', true); return; }
+    const head = el('div','ps-head');
+    const left = el('div'); left.append(el('h1',null,`${p.name?p.name+'ちゃん　':''}本日の診察のご報告`), el('div',null, p.owner ? `${p.owner} 様` : ''));
+    head.append(left, el('div',null,caseDate()));
+    ps.append(head, el('div','ps-body',cur.report));
+    const foot = el('div','ps-foot');
+    foot.append(el('div',null,`${cfg.clinic}${cfg.phone?`　TEL ${cfg.phone}`:''}`), el('div',null, p.vet ? `担当獣医師：${p.vet}` : ''));
+    ps.append(foot, el('div','ps-note','※本資料は本日の診察内容の要約であり、正式な診断書ではありません。'));
+  }else{
+    const head = el('div','ps-head');
+    const left = el('div'); left.append(el('h1',null,'診療記録（SOAP）'), el('div',null,cfg.clinic));
+    head.append(left, el('div',null,caseDate()));
+    const info = el('div','ps-info');
+    [...P_LABELS.map(([k,l]) => [l, p[k]]), ['記録種別', cur.mode]]
+      .filter(([,v]) => v).forEach(([k,v]) => info.append(el('div',null,`${k}：${v}`)));
+    ps.append(head, info);
+    SOAP_KEYS.filter(([k]) => k!=='memo').forEach(([k,l]) => {
+      const sec = el('div','ps-sec'); sec.append(el('h3',null,l), el('div',null,cur.soap[k]||'記載なし')); ps.append(sec);
+    });
+    const foot = el('div','ps-foot');
+    foot.append(el('div',null,`AIが作成した下書きを獣医師が確認・修正したものです（${cur.status}）`), el('div',null,'確認者：＿＿＿＿＿＿＿＿'));
+    ps.append(foot);
+  }
+  window.print();
+};
+
+/* ================= 次の患者・履歴 ================= */
+const blocked = () => {
+  if(recording){ setStatus('録音を停止してから切り替えてください。', true); return true; }
+  if(busy){ setStatus('処理中です。終わってから切り替えてください。', true); return true; }
+  return false;
+};
+function resetInputs(){ $('chatSoapIn').value=''; $('chatSoapShow').open=false; $('chatReportShow').open=false; $('timer').textContent='00:00'; }
+$('newBtn').onclick = () => {
+  if(blocked()) return;
+  saveCase(); cur = newCase(); segments = []; resetInputs();
+  render(); showTab('soap'); setStatus('新しいカルテを開きました'); window.scrollTo(0,0);
+};
+
+function showView(v){
+  $('viewCase').hidden = v!=='case'; $('viewHist').hidden = v!=='hist';
+  $('navCase').setAttribute('aria-selected', v==='case'); $('navHist').setAttribute('aria-selected', v==='hist');
+  $('bottomBar').hidden = v!=='case';
+  if(v==='hist') renderHist();
+  window.scrollTo(0,0);
+}
+$('navCase').onclick = () => showView('case');
+$('navHist').onclick = () => { saveCase(); showView('hist'); };
+
+function renderHist(){
+  const q = $('histSearch').value.trim(), f = $('histFilter').value, noName = $('histNoName').value;
+  const list = store.get('soapAssist.history', []).filter(c =>
+    (!f || c.status===f) && (!noName || !c.patient.name) &&
+    (!q || [c.patient.name,c.patient.owner,c.patient.vet].some(x => (x||'').includes(q))));
+  const box = $('histList'); box.innerHTML = '';
+  if(!list.length){ box.append(el('div','empty','該当するカルテはありません')); return; }
+  list.forEach(c => {
+    const row = el('div','hist-row');
+    const item = el('button','hist-item');
+    const top = el('div','hist-top');
+    top.append(el('span',null,new Date(c.created).toLocaleString('ja-JP',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})),
+      el('span','badge mode',c.mode), el('span','badge'+(c.status==='確認済み'?' done':''),c.status));
+    if(c.durationSec) top.append(el('span',null,fmt(c.durationSec)));
+    item.append(top, el('div','hist-name',`${c.patient.name||'（患者名未入力）'}${c.patient.owner?`　${c.patient.owner}`:''}${c.patient.vet?`　担当 ${c.patient.vet}`:''}`),
+      el('div','hist-snip',(c.soap.S||c.transcript||'').replace(/\s+/g,' ').slice(0,80)));
+    item.onclick = () => {
+      if(blocked()) return;
+      saveCase(); cur = {...newCase(), ...JSON.parse(JSON.stringify(c))}; delete cur.updated; segments = []; resetInputs();
+      render(); showTab('soap'); showView('case');
+      setStatus('履歴のカルテを開きました。「録音を追加」で追記できます。');
+    };
+    const del = el('button','btn small','削除');
+    del.onclick = () => {
+      if(!confirm(`${c.patient.name||'このカルテ'}を履歴から削除します。元に戻せません。`)) return;
+      store.set('soapAssist.history', store.get('soapAssist.history', []).filter(x => x.id!==c.id));
+      if(cur.id===c.id){ cur = newCase(); segments=[]; render(); }
+      renderHist();
+    };
+    row.append(item, del); box.append(row);
+  });
+}
+$('histSearch').oninput = renderHist;
+$('histFilter').onchange = renderHist;
+$('histNoName').onchange = renderHist;
+$('clearHistBtn').onclick = () => {
+  if(!confirm('この端末に保存された履歴をすべて削除します。元に戻せません。')) return;
+  store.set('soapAssist.history', []); cur = newCase(); segments=[]; render(); renderHist();
+};
+
+render();
+</script>
+</body>
+</html>
