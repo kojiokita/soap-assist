@@ -281,6 +281,7 @@ dialog .more label:last-child{margin-bottom:4px}
     <summary>APIキー（Gemini APIやClaude APIを使う場合のみ）</summary>
     <label>Gemini APIキー<input id="cfgGeminiKey" type="password" autocomplete="off"></label>
     <label>Geminiモデル<input id="cfgGeminiModel"></label>
+    <label>混雑時の予備モデル（空欄で使わない）<input id="cfgGeminiFallback"></label>
     <label class="check"><input type="checkbox" id="cfgPaid">Geminiを有料枠に切り替え済み</label>
     <label style="margin-top:10px">Claude APIキー<input id="cfgClaudeKey" type="password" autocomplete="off"></label>
     <label>Claudeモデル<input id="cfgClaudeModel"></label>
@@ -310,7 +311,7 @@ const CHAT = {
 
 /* ================= 設定 ================= */
 const DEF = {clinic:'ウトナイの森動物病院', phone:'', stt:'browser', llm:'chat', chat:'claude',
-             claudeKey:'', claudeModel:'claude-opus-5-5', geminiKey:'', geminiModel:'gemini-2.5-flash',
+             claudeKey:'', claudeModel:'claude-opus-5-5', geminiKey:'', geminiModel:'gemini-2.5-flash', geminiFallback:'gemini-2.5-flash-lite',
              silenceMin:3, reportDrugs:false, paid:false, lastVet:''};
 let cfg = {...DEF, ...store.get('soapAssist.cfg', {})};
 const saveCfg = () => store.set('soapAssist.cfg', cfg);
@@ -319,7 +320,7 @@ $('settingsBtn').onclick = () => {
   $('cfgClinic').value=cfg.clinic; $('cfgPhone').value=cfg.phone;
   $('cfgStt').value=cfg.stt; $('cfgLlm').value=cfg.llm; $('cfgChat').value=cfg.chat;
   $('cfgClaudeKey').value=cfg.claudeKey; $('cfgClaudeModel').value=cfg.claudeModel;
-  $('cfgGeminiKey').value=cfg.geminiKey; $('cfgGeminiModel').value=cfg.geminiModel; $('cfgPaid').checked=cfg.paid;
+  $('cfgGeminiKey').value=cfg.geminiKey; $('cfgGeminiModel').value=cfg.geminiModel; $('cfgGeminiFallback').value=cfg.geminiFallback; $('cfgPaid').checked=cfg.paid;
   $('cfgSilence').value=cfg.silenceMin; $('cfgReportDrugs').checked=cfg.reportDrugs;
   syncCfgForm(); $('settings').showModal();
 };
@@ -334,7 +335,7 @@ $('cfgSave').onclick = () => {
     stt:$('cfgStt').value, llm:$('cfgLlm').value, chat:$('cfgChat').value,
     claudeKey:$('cfgClaudeKey').value.trim(), claudeModel:$('cfgClaudeModel').value.trim()||DEF.claudeModel,
     geminiKey:$('cfgGeminiKey').value.trim(), geminiModel:$('cfgGeminiModel').value.trim()||DEF.geminiModel,
-    paid:$('cfgPaid').checked, silenceMin:Math.max(0, Number($('cfgSilence').value)||0), reportDrugs:$('cfgReportDrugs').checked});
+    geminiFallback:$('cfgGeminiFallback').value.trim(), paid:$('cfgPaid').checked, silenceMin:Math.max(0, Number($('cfgSilence').value)||0), reportDrugs:$('cfgReportDrugs').checked});
   saveCfg(); $('settings').close(); applyEngineUI(); renderRecInfo(); setStatus('設定を保存しました');
 };
 function setStatus(msg, err=false){ const s=$('status'); s.textContent=msg; s.className=err?'err':''; }
@@ -663,14 +664,28 @@ const toB64 = blob => new Promise((res,rej)=>{ const r=new FileReader(); r.onloa
 async function apiError(name, res){
   const body = (await res.text()).slice(0,200);
   if(res.status === 429) return new Error(`${name}の無料枠の回数上限に達しました。しばらく待つか、設定で「チャットに貼り付け」に切り替えてください。`);
+  if(res.status === 503 || res.status === 500) return new Error(`${name}のサーバーが混み合っています。数分おいて「文字起こしをやり直す」を押してください（録音は残っています）。`);
   if(res.status === 400 || res.status === 401 || res.status === 403) return new Error(`${name}のAPIキーかモデル名を確認してください（${res.status}）。`);
   return new Error(`${name} ${res.status}: ${body}`);
 }
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+// 混雑（503/500）は2回まで待って再試行し、それでもだめなら予備のモデルで1回試す
 async function geminiRequest(body){
   if(!cfg.geminiKey) throw new Error('設定でGemini APIキーを入力してください（Google AI Studioで無料で発行できます）。');
-  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(cfg.geminiModel)}:generateContent`, {
-    method:'POST', headers:{'Content-Type':'application/json','x-goog-api-key':cfg.geminiKey}, body: JSON.stringify(body)
-  });
+  const models = [cfg.geminiModel, cfg.geminiModel, cfg.geminiModel, cfg.geminiFallback].filter(Boolean);
+  const waits = [0, 3000, 8000, 2000];
+  let res = null;
+  for(let i=0; i<models.length; i++){
+    if(i > 0){
+      setStatus(i === 3 ? `混み合っているため、予備のモデル（${models[i]}）で試しています…`
+                        : `Geminiが混み合っています。${waits[i]/1000}秒後に再試行します（${i}/2）…`);
+      await sleep(waits[i]);
+    }
+    res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(models[i])}:generateContent`, {
+      method:'POST', headers:{'Content-Type':'application/json','x-goog-api-key':cfg.geminiKey}, body: JSON.stringify(body)
+    });
+    if(res.ok || (res.status !== 503 && res.status !== 500)) break;
+  }
   if(!res.ok) throw await apiError('Gemini', res);
   const j = await res.json();
   return (j.candidates?.[0]?.content?.parts||[]).map(p=>p.text||'').join('').trim();
