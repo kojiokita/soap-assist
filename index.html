@@ -76,6 +76,7 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid #
 .soap-block{margin-bottom:12px}
 .soap-block .lh{display:flex;align-items:center;gap:6px;margin-bottom:2px}
 .soap-block .lh span.t{font-weight:700;font-size:.95rem;color:var(--ink);margin-right:auto}
+.dosage-card{border:1px solid var(--line);background:#fff;border-radius:8px;padding:10px;margin-bottom:8px}
 #bottomBar{position:fixed;left:0;right:0;bottom:0;padding:10px 16px calc(10px + env(safe-area-inset-bottom,0));background:rgba(246,248,247,.96);border-top:1px solid var(--line)}
 #bottomBar .inner{max-width:760px;margin:0 auto;display:flex;gap:8px}
 #bottomBar .btn{flex:1;padding:12px}
@@ -204,6 +205,7 @@ dialog .more label:last-child{margin-bottom:4px}
           <button class="btn" id="copyAllBtn">SOAPをまとめてコピー</button>
         </div>
         <div id="soapFields"></div>
+        <div id="dosageFields" style="margin-top:12px"></div>
       </div>
 
       <div data-panel="trans" hidden>
@@ -257,6 +259,13 @@ dialog .more label:last-child{margin-bottom:4px}
   <h2>設定</h2>
   <label>病院名<input id="cfgClinic"></label>
   <label>病院の電話番号（レポートに印刷）<input id="cfgPhone" inputmode="tel"></label>
+  
+  <details class="more" id="cfgDictWrap" style="margin-top:10px; margin-bottom:10px;">
+    <summary>院内辞書・マスキング設定</summary>
+    <label>カスタム辞書（改行区切り: 薬剤名・検査項目など）<textarea id="cfgGlossary" rows="3" placeholder="コンベニア&#10;アポキル&#10;v-LIP"></textarea></label>
+    <label class="check" style="margin-top:8px"><input type="checkbox" id="cfgMaskPii"> 個人情報(PII)をAI送信時に自動マスキングする</label>
+  </details>
+
   <label>文字起こしの方法
     <select id="cfgStt">
       <option value="browser">ブラウザの音声認識（無料・キー不要・話者の区別なし）</option>
@@ -280,8 +289,10 @@ dialog .more label:last-child{margin-bottom:4px}
   <details class="more" id="cfgKeys">
     <summary>APIキー（Gemini APIやClaude APIを使う場合のみ）</summary>
     <label>Gemini APIキー<input id="cfgGeminiKey" type="password" autocomplete="off"></label>
-    <label>Geminiモデル<input id="cfgGeminiModel"></label>
-    <label>混雑時の予備モデル（空欄で使わない）<input id="cfgGeminiFallback"></label>
+    <label>文字起こし用のGeminiモデル<input id="cfgGeminiModel"></label>
+    <label>SOAP・レポート用のGeminiモデル<input id="cfgGeminiTextModel"></label>
+    <label>混雑・提供終了時の予備モデル（空欄で使わない）<input id="cfgGeminiFallback"></label>
+    <p class="sub" style="margin:0 0 10px">モデル名はGoogle側で入れ替わることがあります。エラーが出たら、AI Studioで今使えるモデル名を確認してください。</p>
     <label class="check"><input type="checkbox" id="cfgPaid">Geminiを有料枠に切り替え済み</label>
     <label style="margin-top:10px">Claude APIキー<input id="cfgClaudeKey" type="password" autocomplete="off"></label>
     <label>Claudeモデル<input id="cfgClaudeModel"></label>
@@ -311,16 +322,24 @@ const CHAT = {
 
 /* ================= 設定 ================= */
 const DEF = {clinic:'ウトナイの森動物病院', phone:'', stt:'browser', llm:'chat', chat:'claude',
-             claudeKey:'', claudeModel:'claude-opus-5-5', geminiKey:'', geminiModel:'gemini-2.5-flash', geminiFallback:'gemini-2.5-flash-lite',
-             silenceMin:3, reportDrugs:false, paid:false, lastVet:''};
+             claudeKey:'', claudeModel:'claude-opus-5-5', geminiKey:'',
+             geminiModel:'gemini-3.5-flash-lite', geminiTextModel:'gemini-3.8-flash', geminiFallback:'gemini-3.1-flash-lite',
+             silenceMin:3, reportDrugs:false, paid:false, lastVet:'', glossary:'', maskPii:true};
 let cfg = {...DEF, ...store.get('soapAssist.cfg', {})};
 const saveCfg = () => store.set('soapAssist.cfg', cfg);
+(() => {
+  const old = m => /^gemini-(1\.|2\.)/.test(m || '');
+  let changed = false;
+  ['geminiModel','geminiTextModel','geminiFallback'].forEach(k => { if(old(cfg[k])){ cfg[k] = DEF[k]; changed = true; } });
+  if(changed) saveCfg();
+})();
 
 $('settingsBtn').onclick = () => {
   $('cfgClinic').value=cfg.clinic; $('cfgPhone').value=cfg.phone;
+  $('cfgGlossary').value=cfg.glossary; $('cfgMaskPii').checked=cfg.maskPii;
   $('cfgStt').value=cfg.stt; $('cfgLlm').value=cfg.llm; $('cfgChat').value=cfg.chat;
   $('cfgClaudeKey').value=cfg.claudeKey; $('cfgClaudeModel').value=cfg.claudeModel;
-  $('cfgGeminiKey').value=cfg.geminiKey; $('cfgGeminiModel').value=cfg.geminiModel; $('cfgGeminiFallback').value=cfg.geminiFallback; $('cfgPaid').checked=cfg.paid;
+  $('cfgGeminiKey').value=cfg.geminiKey; $('cfgGeminiModel').value=cfg.geminiModel; $('cfgGeminiTextModel').value=cfg.geminiTextModel; $('cfgGeminiFallback').value=cfg.geminiFallback; $('cfgPaid').checked=cfg.paid;
   $('cfgSilence').value=cfg.silenceMin; $('cfgReportDrugs').checked=cfg.reportDrugs;
   syncCfgForm(); $('settings').showModal();
 };
@@ -332,9 +351,11 @@ $('cfgStt').onchange = $('cfgLlm').onchange = syncCfgForm;
 $('cfgClose').onclick = () => $('settings').close();
 $('cfgSave').onclick = () => {
   Object.assign(cfg, {clinic:$('cfgClinic').value.trim(), phone:$('cfgPhone').value.trim(),
+    glossary:$('cfgGlossary').value.trim(), maskPii:$('cfgMaskPii').checked,
     stt:$('cfgStt').value, llm:$('cfgLlm').value, chat:$('cfgChat').value,
     claudeKey:$('cfgClaudeKey').value.trim(), claudeModel:$('cfgClaudeModel').value.trim()||DEF.claudeModel,
     geminiKey:$('cfgGeminiKey').value.trim(), geminiModel:$('cfgGeminiModel').value.trim()||DEF.geminiModel,
+    geminiTextModel:$('cfgGeminiTextModel').value.trim()||DEF.geminiTextModel,
     geminiFallback:$('cfgGeminiFallback').value.trim(), paid:$('cfgPaid').checked, silenceMin:Math.max(0, Number($('cfgSilence').value)||0), reportDrugs:$('cfgReportDrugs').checked});
   saveCfg(); $('settings').close(); applyEngineUI(); renderRecInfo(); setStatus('設定を保存しました');
 };
@@ -352,6 +373,7 @@ function applyEngineUI(){
   if(cfg.stt === 'browser') msgs.push('ブラウザの音声認識は、音声をGoogle（iPhoneではApple）のサーバーに送って文字にします。');
   if(!cfg.paid && (cfg.stt === 'gemini' || cfg.llm === 'gemini')) msgs.push('Gemini無料APIでは、入力した音声やテキストがGoogleのサービス改善に使われます。模擬診察の音声だけで試してください。');
   if(chat) msgs.push(`${CHAT[cfg.chat].name}の設定画面で、会話をAIの学習に使う項目をオフにしてから使ってください。`);
+  if(cfg.maskPii) msgs.push('PII自動マスキングが有効です。AIへの送信時、飼い主名や電話番号は自動的に伏せ字に置き換えられます。');
   const b = $('banner'); b.innerHTML = ''; msgs.forEach(m => b.append(el('div', null, m))); b.hidden = !msgs.length;
 }
 
@@ -365,14 +387,16 @@ const MODE_HELP = {
   '診察':'診察室での獣医師と飼い主さんの会話です。S・O・A・Pすべてをまとめます。',
   '口述':'診察後に獣医師が一人で所見や方針を話して記録します。周りが静かな場所での録音がおすすめです。'
 };
+
 function newCase(){
   return {id: Date.now().toString(36)+Math.random().toString(36).slice(2,6), created:new Date().toISOString(),
     mode:'診察', status:'下書き', durationSec:0,
     patient:{name:'',species:'',breed:'',age:'',sex:'',category:'',owner:'',vet:cfg.lastVet||''},
-    transcript:'', soap:{S:'',O:'',A:'',P:'',bikou:'',memo:''}, aiSoap:{}, report:''};
+    transcript:'', soap:{S:'',O:'',A:'',P:'',bikou:'',memo:''}, aiSoap:{}, report:'',
+    piiMap:{}, dosageCalculations:[]};
 }
 let cur = newCase();
-let segments = [];   // 現在のカルテの録音Blob（端末メモリ内のみ・保存しない）
+let segments = [];
 
 $('soapFields').innerHTML = SOAP_KEYS.map(([k,l]) =>
   `<div class="soap-block"><div class="lh"><span class="t">${l}</span>
@@ -385,10 +409,62 @@ function render(){
   document.querySelectorAll('[data-k]').forEach(e => e.value = cur.patient[e.dataset.k] ?? '');
   SOAP_KEYS.forEach(([k]) => $('soap_'+k).value = cur.soap[k] || '');
   $('transcript').value = cur.transcript; $('report').value = cur.report;
-  setMode(cur.mode, false); renderStatus(); renderRecInfo(); renderEdited(); renderMoreSum();
+  setMode(cur.mode, false); renderStatus(); renderRecInfo(); renderEdited(); renderMoreSum(); renderDosages();
   $('reTransBtn').disabled = $('dlBtn').disabled = segments.length === 0;
   applyEngineUI();
 }
+
+function renderDosages() {
+  const box = $('dosageFields');
+  if(!box) return;
+  box.innerHTML = '';
+  if(!cur.dosageCalculations || cur.dosageCalculations.length === 0) return;
+  
+  const drugDict = store.get('soapAssist.drugDict', {});
+  const sp = cur.patient.species || '不明';
+
+  box.append(el('div', 'sub', '【AI用量検知】（※必ず獣医師が確認してください）'));
+  
+  cur.dosageCalculations.forEach((d) => {
+    if(!d.drugName || !d.calculatedMgPerKg) return;
+    const key = `${d.drugName}_${sp}`;
+    const past = drugDict[key];
+    const div = el('div', 'dosage-card');
+    
+    let statusHtml = '';
+    if(past) {
+       const avg = past.avgMgPerKg.toFixed(2);
+       if(d.calculatedMgPerKg > avg * 1.5 || d.calculatedMgPerKg < avg * 0.5) {
+         statusHtml = `<span class="badge" style="background:var(--warn-bg);color:var(--warn)">⚠️ 過去実績(${avg}mg/kg)から乖離</span>`;
+       } else {
+         statusHtml = `<span class="badge" style="background:var(--done-bg);color:var(--done)">✓ 過去実績(${avg}mg/kg)の範囲内</span>`;
+       }
+    } else {
+       statusHtml = `<span class="badge" style="background:#eee;color:#333">初回登録（${sp}）</span>`;
+    }
+
+    div.innerHTML = `
+      <div style="font-size:0.95rem; font-weight:700">${d.drugName} <span style="font-weight:400;font-size:0.85rem">(${d.route\vert{}\vert{}''} /${d.frequency||''})</span></div>
+      <div style="font-size:0.85rem; color:var(--muted)">
+        体重 ${d.bwKg}kg に対し ${d.doseMgPerAdministration}mg ＝ <strong style="color:var(--ink)">${d.calculatedMgPerKg} mg/kg</strong>
+      </div>
+      <div style="margin-top:4px">${statusHtml}</div>
+    `;
+    const btn = el('button', 'btn small', past ? '実績を更新' : '院内目安に登録');
+    btn.style.marginTop = '8px';
+    btn.onclick = () => {
+       const newAvg = past ? (past.avgMgPerKg * past.count + d.calculatedMgPerKg) / (past.count + 1) : d.calculatedMgPerKg;
+       const newCount = past ? past.count + 1 : 1;
+       drugDict[key] = { drugName: d.drugName, species: sp, avgMgPerKg: newAvg, count: newCount, lastUpdated: new Date().toISOString() };
+       store.set('soapAssist.drugDict', drugDict);
+       renderDosages();
+       setStatus(`${d.drugName}の用量（${sp}）を院内辞書に登録しました`);
+    };
+    div.append(btn);
+    box.append(div);
+  });
+}
+
 function renderEdited(){
   SOAP_KEYS.forEach(([k]) => {
     const edited = cur.aiSoap && k in cur.aiSoap && (cur.soap[k]||'') !== (cur.aiSoap[k]||'');
@@ -476,8 +552,8 @@ $('copyReportBtn').onclick = () => copyText(cur.report, 'レポート');
 
 /* ================= 録音 ================= */
 let recording=false, recKind=null, t0=0, stopAt=0, tick=null, wakeLock=null, lastVoice=0, autoStopped=false;
-let rec=null, chunks=[], stream=null, ac=null, analyser=null;           // Gemini用（録音ファイルを作る）
-const SR = window.SpeechRecognition || window.webkitSpeechRecognition;  // ブラウザ音声認識
+let rec=null, chunks=[], stream=null, ac=null, analyser=null;
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 let srec=null, srFinal='', srFatal=false, srDone=false;
 
 $('recBtn').onclick = () => recording ? stopRec() : startRec();
@@ -541,7 +617,6 @@ function startBrowserRec(){
       if(recording) stopRec();
     }
   };
-  // 音声認識は数十秒〜数分で自動的に切れるため、録音中は再開し続ける
   srec.onend = () => {
     if(recording && !srFatal){
       try{ srec.start(); }catch(_){ setTimeout(() => { if(recording){ try{ srec.start(); }catch(__){} } }, 300); }
@@ -578,7 +653,7 @@ function stopRec(){
   try{ wakeLock?.release(); }catch(e){} wakeLock=null;
   if(recKind === 'browser'){
     try{ srec.stop(); }catch(e){}
-    setTimeout(finishBrowserRec, 2500);   // onend が来ない機種への保険
+    setTimeout(finishBrowserRec, 2500);
   }else if(rec && rec.state === 'recording') rec.stop();
 }
 
@@ -630,12 +705,12 @@ $('dlBtn').onclick = () => {
   segments.forEach((b, i) => {
     const ext = (b.type.includes('mp4')?'m4a':b.type.includes('wav')?'wav':b.type.includes('mpeg')?'mp3':'webm');
     const a = document.createElement('a'); a.href = URL.createObjectURL(b);
-    a.download = `${(cur.patient.name||'録音').replace(/[\\/:*?"<>|]/g,'')}_${new Date(cur.created).toISOString().slice(0,10)}_${i+1}.${ext}`;
+    a.download = `${(cur.patient.name\vert{}\vert{}'録音').replace(/[\\/:*?"<>\vert{}]/g,'')}_${new Date(cur.created).toISOString().slice(0,10)}_${i+1}.${ext}`;
     document.body.append(a); a.click(); a.remove();
   });
 };
 
-/* ================= 音声変換（16kHzモノラルWAV、5分ごとに分割） ================= */
+/* ================= 音声変換 ================= */
 async function toWavChunks(blob, chunkSec=300){
   const AC = window.AudioContext || window.webkitAudioContext;
   const ctx = new AC();
@@ -665,26 +740,33 @@ async function apiError(name, res){
   const body = (await res.text()).slice(0,200);
   if(res.status === 429) return new Error(`${name}の無料枠の回数上限に達しました。しばらく待つか、設定で「チャットに貼り付け」に切り替えてください。`);
   if(res.status === 503 || res.status === 500) return new Error(`${name}のサーバーが混み合っています。数分おいて「文字起こしをやり直す」を押してください（録音は残っています）。`);
+  if(res.status === 404) return new Error(`${name}のモデルが見つからないか、提供が終わっています。設定のモデル名を、AI Studioで使えるものに変えてください。`);
   if(res.status === 400 || res.status === 401 || res.status === 403) return new Error(`${name}のAPIキーかモデル名を確認してください（${res.status}）。`);
-  return new Error(`${name} ${res.status}: ${body}`);
+  return new Error(`${name} ${res.status}:${body}`);
 }
 const sleep = ms => new Promise(r => setTimeout(r, ms));
-// 混雑（503/500）は2回まで待って再試行し、それでもだめなら予備のモデルで1回試す
-async function geminiRequest(body){
+async function geminiRequest(body, model){
   if(!cfg.geminiKey) throw new Error('設定でGemini APIキーを入力してください（Google AI Studioで無料で発行できます）。');
-  const models = [cfg.geminiModel, cfg.geminiModel, cfg.geminiModel, cfg.geminiFallback].filter(Boolean);
-  const waits = [0, 3000, 8000, 2000];
-  let res = null;
-  for(let i=0; i<models.length; i++){
-    if(i > 0){
-      setStatus(i === 3 ? `混み合っているため、予備のモデル（${models[i]}）で試しています…`
-                        : `Geminiが混み合っています。${waits[i]/1000}秒後に再試行します（${i}/2）…`);
-      await sleep(waits[i]);
-    }
-    res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(models[i])}:generateContent`, {
+  const fb = cfg.geminiFallback && cfg.geminiFallback !== model ? cfg.geminiFallback : '';
+  const plan = [[model,0],[model,3000],[model,8000]];
+  let res = null, usedFallback = false;
+  for(let i=0; i<plan.length; i++){
+    const [m, wait] = plan[i];
+    if(wait){ setStatus(`Geminiが混み合っています。${wait/1000}秒後に再試行します（${i}/2）…`); await sleep(wait); }
+    res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(m)}:generateContent`, {
       method:'POST', headers:{'Content-Type':'application/json','x-goog-api-key':cfg.geminiKey}, body: JSON.stringify(body)
     });
-    if(res.ok || (res.status !== 503 && res.status !== 500)) break;
+    if(res.ok) break;
+    const retryable = res.status === 503 || res.status === 500;
+    const gone = res.status === 404;
+    if(!retryable && !gone) break;
+    if(gone || i === plan.length - 1){
+      if(!fb || usedFallback) break;
+      usedFallback = true;
+      setStatus(gone ? `モデル ${m} が使えないため、予備のモデル（${fb}）で試しています…`
+                     : `混み合っているため、予備のモデル（${fb}）で試しています…`);
+      plan.length = i + 1; plan.push([fb, gone ? 0 : 2000]);
+    }
   }
   if(!res.ok) throw await apiError('Gemini', res);
   const j = await res.json();
@@ -705,21 +787,79 @@ function callLLM(system, user, {json=false, maxTokens=4000}={}){
   if(cfg.llm === 'gemini') return geminiRequest({
     systemInstruction:{parts:[{text:system}]}, contents:[{role:'user', parts:[{text:user}]}],
     generationConfig:{temperature:0.2, ...(json ? {responseMimeType:'application/json'} : {})}
-  });
+  }, cfg.geminiTextModel);
   return callClaude(system, user, maxTokens);
 }
+
+/* ================= PII マスキング（個人情報の自動変換） ================= */
+function maskPII(text) {
+  if (!cfg.maskPii) return text;
+  if (!cur.piiMap) cur.piiMap = {};
+  let t = text;
+  let counter = Object.keys(cur.piiMap).length + 1;
+  
+  const register = (val, prefix) => {
+    if (!val || val.length < 2) return;
+    let existingKey = Object.keys(cur.piiMap).find(k => cur.piiMap[k] === val);
+    const key = existingKey || `[${prefix}_${counter++}]`;
+    if (!existingKey) cur.piiMap[key] = val;
+    // 正規表現で安全に全置換
+    const reg = new RegExp(val.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+    t = t.replace(reg, key);
+  };
+  
+  if (cur.patient.name) register(cur.patient.name, 'PATIENT');
+  if (cur.patient.owner) register(cur.patient.owner, 'OWNER');
+  if (cfg.phone) register(cfg.phone, 'CLINIC_PHONE');
+  
+  // 電話番号の自動検知（シンプルな正規表現）
+  t = t.replace(/\b0\d{1,4}[-(]?\d{1,4}[-)]?\d{3,4}\b/g, m => {
+    let existingKey = Object.keys(cur.piiMap).find(k => cur.piiMap[k] === m);
+    const key = existingKey || `[PHONE_${counter++}]`;
+    if (!existingKey) cur.piiMap[key] = m;
+    return key;
+  });
+  
+  touch(); // Mapが更新されたら保存
+  return t;
+}
+
+// プレーンテキスト用逆変換
+function unmaskStr(text) {
+  if (!cfg.maskPii || !text || !cur.piiMap) return text;
+  let t = text;
+  for (const [key, val] of Object.entries(cur.piiMap)) {
+    t = t.split(key).join(val);
+  }
+  return t;
+}
+
+// JSONオブジェクト用（構文破壊を防ぐためパース後に値だけを逆変換する）
+function unmaskObj(obj) {
+  if (!cfg.maskPii || !obj || !cur.piiMap) return obj;
+  if (typeof obj === 'string') return unmaskStr(obj);
+  if (Array.isArray(obj)) return obj.map(unmaskObj);
+  if (typeof obj === 'object') {
+    const res = {};
+    for (const [k, v] of Object.entries(obj)) res[k] = unmaskObj(v);
+    return res;
+  }
+  return obj;
+}
+
 
 /* ================= Gemini：音声の文字起こし ================= */
 function transcribePart(b64, idx, total, prevTail){
   const who = cur.mode==='口述' ? '獣医師が一人で所見や方針を話した口述記録' : '獣医師（または動物看護師）と飼い主の会話';
+  const gloss = cfg.glossary.trim() ? '\n・以下の専門用語や薬剤名が会話に含まれる可能性が高いため、優先して認識すること：\n' + cfg.glossary.split('\n').join(', ') : '';
   const prompt =
 `これは日本の動物病院で録音した、${who}${total>1?`（全${total}区間中の第${idx}区間）`:''}です。
 日本語で逐語的に文字起こししてください。
 ・発話ごとに改行し、行頭に【獣医師】【看護師】【飼い主】のいずれかを付ける（判別できなければ【不明】）
 ・獣医学用語、薬剤名、検査値、数値と単位は正確に書く
 ・聞き取れない箇所は（聞き取り不可）と書き、推測で補わない
-・文字起こし以外の説明や前置きは書かない${prevTail?`\n直前の区間の末尾は次のとおりです（話者判定の参考のみ。繰り返さない）：\n${prevTail}`:''}`;
-  return geminiRequest({contents:[{parts:[{text:prompt},{inline_data:{mime_type:'audio/wav', data:b64}}]}], generationConfig:{temperature:0}});
+・文字起こし以外の説明や前置きは書かない${prevTail?`\n直前の区間の末尾は次のとおりです（話者判定の参考のみ。繰り返さない）：\n${prevTail}`:''}${gloss}`;
+  return geminiRequest({contents:[{parts:[{text:prompt},{inline_data:{mime_type:'audio/wav', data:b64}}]}], generationConfig:{temperature:0}}, cfg.geminiModel);
 }
 
 let busy = false;
@@ -745,7 +885,7 @@ async function transcribeAudio(blobs){
 /* ================= SOAPの指示文 ================= */
 const P_LABELS = [['name','患者名'],['species','動物種'],['breed','品種'],['age','年齢'],['sex','性別'],['category','診療区分'],['owner','飼い主'],['vet','担当獣医師']];
 function patientLine(){
-  const items = P_LABELS.filter(([k]) => k!=='owner' && k!=='vet' && cur.patient[k]).map(([k,l]) => `${l} ${cur.patient[k]}`);
+  const items = P_LABELS.filter(([k]) => k!=='owner' && k!=='vet' && cur.patient[k]).map(([k,l]) => `${l}${cur.patient[k]}`);
   return items.length ? `患者情報：${items.join('／')}` : '患者情報：未入力（会話から読み取れる範囲で扱う）';
 }
 function renderMoreSum(){
@@ -753,7 +893,7 @@ function renderMoreSum(){
   $('pMoreSum').textContent = filled.length ? filled.join('・') : '';
 }
 
-const SOAP_BODY =
+const getSoapBody = () => 
 `あなたは動物病院のカルテ作成を補助する獣医療記録アシスタントです。文字起こしから、獣医師が確認・修正する前提のSOAP下書きを作ります。
 共通の規則：
 ・会話で実際に述べられた内容だけを使う。述べられていない所見、診断、薬用量を推測で補わない
@@ -768,7 +908,9 @@ const SOAP_BODY =
   【会計項目候補】
   [処置/検査] 項目, 項目
   [処方] 薬剤名 用量 日数
-・memo：上記の保留事項に加え、聞き取りが曖昧な箇所、数値や薬剤名の誤認識が疑われる箇所など、獣医師が確認すべき点`;
+・memo：上記の保留事項に加え、聞き取りが曖昧な箇所、数値や薬剤名の誤認識が疑われる箇所など、獣医師が確認すべき点
+${cfg.glossary.trim() ? '・表記統一ルール：以下の用語の表記を優先して使用する。\n  ' + cfg.glossary.split('\n').join(', ') : ''}
+・dosageCalculations: 体重(kg)と処方薬の用量が会話にある場合、mg/kgを計算して配列に記録する（該当なければ空配列）。体重がgの場合はkgに換算すること。`;
 
 const SOAP_RULES = {
 '診察': `
@@ -788,10 +930,10 @@ const SOAP_RULES = {
 ・言い直しや訂正があった場合は、最後に述べた内容を採用する
 ・「Sは〜」「所見は〜」のように獣医師がセクションを指定した場合は、その指定に従う`
 };
-const JSON_SHAPE = '{"S":"","O":"","A":"","P":"","bikou":"","memo":""}';
+const JSON_SHAPE = '{"S":"","O":"","A":"","P":"","bikou":"","memo":"","dosageCalculations":[{"drugName":"","bwKg":0,"doseMgPerAdministration":0,"calculatedMgPerKg":0,"frequency":"","route":""}]}';
 const OUT_API  = `\n出力はJSONのみ。前置きやコードフェンスは付けない。各値の改行は \\n で表す。形式：${JSON_SHAPE}`;
 const OUT_CHAT = `\n出力は次の形式のJSONを、\`\`\`json で始まるコードブロック1つだけで返す。前置き・説明・感想は書かない。各値の改行は \\n で表す。形式：${JSON_SHAPE}`;
-const soapUser = () => `${patientLine()}\n\n文字起こし：\n${cur.transcript}`;
+const soapUser = () => maskPII(`${patientLine()}\n\n文字起こし：\n${cur.transcript}`);
 
 const reportSys = () =>
 `あなたは動物病院のスタッフとして、飼い主さま向けに本日の診察内容をまとめた説明文を書きます。A4用紙1枚に収まる分量にします。
@@ -807,12 +949,12 @@ ${cfg.reportDrugs
 ・次の見出しで構成する。SOAPに該当する内容がない見出しは、見出しごと省く：
   【本日の診察について】【検査・処置の内容】【お薬について】【ご自宅でのケア】【こんな様子が見られたらご連絡ください】【次回のご来院】
 ・マークダウン記号（#、*、**）は使わず、プレーンテキストで出力する`;
-const reportUser = () => `${patientLine()}\n\nSOAP：\n${['S','O','A','P'].map(k => `${k}:\n${cur.soap[k]||'記載なし'}`).join('\n\n')}`;
+const reportUser = () => maskPII(`${patientLine()}\n\nSOAP：\n${['S','O','A','P'].map(k => `${k}:\n${cur.soap[k]||'記載なし'}`).join('\n\n')}`);
 const hasSoap = () => ['S','O','A','P'].some(k => (cur.soap[k]||'').trim() && cur.soap[k].trim()!=='記載なし');
 
 function chatPrompt(kind){
   if(kind === 'soap')
-    return `# 指示\n${SOAP_BODY}${SOAP_RULES[cur.mode]}${OUT_CHAT}\n\n# 入力\n${soapUser()}`;
+    return `# 指示\n${getSoapBody()}${SOAP_RULES[cur.mode]}${OUT_CHAT}\n\n# 入力\n${soapUser()}`;
   return `# 指示\n${reportSys()}\n・出力はレポート本文だけにし、前置きや説明は書かない\n\n# 入力\n${reportUser()}`;
 }
 function prepareChatPrompt(kind){
@@ -849,6 +991,7 @@ function parseSoap(text){
 function applySoap(obj){
   SOAP_KEYS.forEach(([k]) => cur.soap[k] = (obj[k] ?? '').toString().trim());
   cur.aiSoap = {...cur.soap}; cur.status = '下書き';
+  cur.dosageCalculations = obj.dosageCalculations || [];
   render(); saveCase(); showTab('soap');
   setStatus('SOAP下書きができました。内容を確認・修正し、問題なければ「確認済みにする」を押してください。');
 }
@@ -862,14 +1005,14 @@ function confirmRegen(){
 async function makeSoap(){
   if(!cur.transcript.trim()){ setStatus('文字起こしが空です。録音するか、文字起こし欄に入力してください。', true); return; }
   if(busy) return;
-  busy = true; setStatus('SOAPに変換しています…'); $('soapBtn').disabled = $('soapBtn2').disabled = true;
+  busy = true; setStatus('SOAPに変換しています…'); $('soapBtn').disabled =$('soapBtn2').disabled = true;
   try{
-    applySoap(parseSoap(await callLLM(SOAP_BODY + SOAP_RULES[cur.mode] + OUT_API, soapUser(), {json:true})));
+    const raw = await callLLM(getSoapBody() + SOAP_RULES[cur.mode] + OUT_API, soapUser(), {json:true});
+    applySoap(unmaskObj(parseSoap(raw)));
   }catch(err){ setStatus('SOAP変換に失敗しました：'+err.message, true); }
-  finally{ busy = false; $('soapBtn').disabled = $('soapBtn2').disabled = false; }
+  finally{ busy = false; $('soapBtn').disabled =$('soapBtn2').disabled = false; }
 }
-$('soapBtn').onclick = () => { if(confirmRegen()) makeSoap(); };
-$('soapBtn2').onclick = () => {
+$('soapBtn').onclick = () => { if(confirmRegen()) makeSoap(); };$('soapBtn2').onclick = () => {
   cur.transcript = $('transcript').value;
   if(cfg.llm === 'chat'){ afterTranscript(); return; }
   if(confirmRegen()) makeSoap();
@@ -892,13 +1035,11 @@ $('chatSoapOpen').onclick = () => {
   if(!cur.transcript.trim()){ setStatus('文字起こしが空です。先に録音してください。', true); return; }
   copyAndOpen(prepareChatPrompt('soap'), 'SOAPの依頼文');
 };
-$('chatSoapShow').addEventListener('toggle', () => { if($('chatSoapShow').open) prepareChatPrompt('soap'); });
-$('chatSoapPaste').onclick = async () => { const t = await readClipboard(); if(t != null) $('chatSoapIn').value = t; };
-$('chatSoapImport').onclick = () => {
+$('chatSoapShow').addEventListener('toggle', () => { if($('chatSoapShow').open) prepareChatPrompt('soap'); });$('chatSoapPaste').onclick = async () => { const t = await readClipboard(); if(t != null) $('chatSoapIn').value = t; };$('chatSoapImport').onclick = () => {
   const t = $('chatSoapIn').value.trim();
   if(!t){ setStatus('チャットの返答を貼り付けてください。', true); return; }
   if(!confirmRegen()) return;
-  try{ applySoap(parseSoap(t)); $('chatSoapIn').value = ''; }
+  try{ applySoap(unmaskObj(parseSoap(t))); $('chatSoapIn').value = ''; }
   catch(e){ setStatus('返答を読み取れませんでした。返答の { から } までを、まるごとコピーして貼り付けてください。', true); }
 };
 
@@ -908,7 +1049,8 @@ $('reportBtn').onclick = async () => {
   if(cur.report.trim() && !confirm('作成済みのレポートを作り直します。手で直した内容は上書きされます。よろしいですか？')) return;
   setStatus('オーナー向けレポートを作成しています…'); $('reportBtn').disabled = true;
   try{
-    cur.report = stripMd(await callLLM(reportSys(), reportUser(), {maxTokens:2500}));
+    const raw = await callLLM(reportSys(), reportUser(), {maxTokens:2500});
+    cur.report = stripMd(unmaskStr(raw));
     $('report').value = cur.report; saveCase();
     setStatus('レポートができました。内容を確認してから印刷してください。');
   }catch(err){ setStatus('レポート作成に失敗しました：'+err.message, true); }
@@ -918,11 +1060,10 @@ $('chatReportOpen').onclick = () => {
   if(!hasSoap()){ setStatus('先にSOAPを作成してください。', true); return; }
   copyAndOpen(prepareChatPrompt('report'), 'レポートの依頼文');
 };
-$('chatReportShow').addEventListener('toggle', () => { if($('chatReportShow').open) prepareChatPrompt('report'); });
-$('chatReportPaste').onclick = async () => {
+$('chatReportShow').addEventListener('toggle', () => { if($('chatReportShow').open) prepareChatPrompt('report'); });$('chatReportPaste').onclick = async () => {
   const t = await readClipboard(); if(t == null) return;
   if(cur.report.trim() && !confirm('作成済みのレポートを貼り付けた内容で置き換えます。よろしいですか？')) return;
-  cur.report = stripMd(t); $('report').value = cur.report; saveCase();
+  cur.report = stripMd(unmaskStr(t)); $('report').value = cur.report; saveCase();
   setStatus('レポートを貼り付けました。内容を確認してから印刷してください。');
 };
 
@@ -934,11 +1075,11 @@ $('printBtn').onclick = () => {
   if(activeTab === 'report'){
     if(!cur.report.trim()){ setStatus('先にレポートを作成してください。', true); return; }
     const head = el('div','ps-head');
-    const left = el('div'); left.append(el('h1',null,`${p.name?p.name+'ちゃん　':''}本日の診察のご報告`), el('div',null, p.owner ? `${p.owner} 様` : ''));
+    const left = el('div'); left.append(el('h1',null,`${p.name?p.name+'ちゃん ':''}本日の診察のご報告`), el('div',null, p.owner ? `${p.owner} 様` : ''));
     head.append(left, el('div',null,caseDate()));
     ps.append(head, el('div','ps-body',cur.report));
     const foot = el('div','ps-foot');
-    foot.append(el('div',null,`${cfg.clinic}${cfg.phone?`　TEL ${cfg.phone}`:''}`), el('div',null, p.vet ? `担当獣医師：${p.vet}` : ''));
+    foot.append(el('div',null,`${cfg.clinic}${cfg.phone?` TEL ${cfg.phone}`:''}`), el('div',null, p.vet ? `担当獣医師：${p.vet}` : ''));
     ps.append(foot, el('div','ps-note','※本資料は本日の診察内容の要約であり、正式な診断書ではありません。'));
   }else{
     const head = el('div','ps-head');
@@ -964,25 +1105,21 @@ const blocked = () => {
   if(busy){ setStatus('処理中です。終わってから切り替えてください。', true); return true; }
   return false;
 };
-function resetInputs(){ $('chatSoapIn').value=''; $('chatSoapShow').open=false; $('chatReportShow').open=false; $('timer').textContent='00:00'; }
-$('newBtn').onclick = () => {
+function resetInputs(){ $('chatSoapIn').value=''; $('chatSoapShow').open=false; $('chatReportShow').open=false; $('timer').textContent='00:00'; }$('newBtn').onclick = () => {
   if(blocked()) return;
   saveCase(); cur = newCase(); segments = []; resetInputs();
   render(); showTab('soap'); setStatus('新しいカルテを開きました'); window.scrollTo(0,0);
 };
 
 function showView(v){
-  $('viewCase').hidden = v!=='case'; $('viewHist').hidden = v!=='hist';
-  $('navCase').setAttribute('aria-selected', v==='case'); $('navHist').setAttribute('aria-selected', v==='hist');
-  $('bottomBar').hidden = v!=='case';
+  $('viewCase').hidden = v!=='case'; $('viewHist').hidden = v!=='hist';$('navCase').setAttribute('aria-selected', v==='case'); $('navHist').setAttribute('aria-selected', v==='hist');$('bottomBar').hidden = v!=='case';
   if(v==='hist') renderHist();
   window.scrollTo(0,0);
 }
-$('navCase').onclick = () => showView('case');
-$('navHist').onclick = () => { saveCase(); showView('hist'); };
+$('navCase').onclick = () => showView('case');$('navHist').onclick = () => { saveCase(); showView('hist'); };
 
 function renderHist(){
-  const q = $('histSearch').value.trim(), f = $('histFilter').value, noName = $('histNoName').value;
+  const q = $('histSearch').value.trim(), f = $('histFilter').value, noName =$('histNoName').value;
   const list = store.get('soapAssist.history', []).filter(c =>
     (!f || c.status===f) && (!noName || !c.patient.name) &&
     (!q || [c.patient.name,c.patient.owner,c.patient.vet].some(x => (x||'').includes(q))));
@@ -995,7 +1132,7 @@ function renderHist(){
     top.append(el('span',null,new Date(c.created).toLocaleString('ja-JP',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})),
       el('span','badge mode',c.mode), el('span','badge'+(c.status==='確認済み'?' done':''),c.status));
     if(c.durationSec) top.append(el('span',null,fmt(c.durationSec)));
-    item.append(top, el('div','hist-name',`${c.patient.name||'（患者名未入力）'}${c.patient.owner?`　${c.patient.owner}`:''}${c.patient.vet?`　担当 ${c.patient.vet}`:''}`),
+    item.append(top, el('div','hist-name',`${c.patient.name||'（患者名未入力）'}${c.patient.owner?` ${c.patient.owner}`:''}${c.patient.vet?` 担当 ${c.patient.vet}`:''}`),
       el('div','hist-snip',(c.soap.S||c.transcript||'').replace(/\s+/g,' ').slice(0,80)));
     item.onclick = () => {
       if(blocked()) return;
@@ -1014,14 +1151,3 @@ function renderHist(){
   });
 }
 $('histSearch').oninput = renderHist;
-$('histFilter').onchange = renderHist;
-$('histNoName').onchange = renderHist;
-$('clearHistBtn').onclick = () => {
-  if(!confirm('この端末に保存された履歴をすべて削除します。元に戻せません。')) return;
-  store.set('soapAssist.history', []); cur = newCase(); segments=[]; render(); renderHist();
-};
-
-render();
-</script>
-</body>
-</html>
