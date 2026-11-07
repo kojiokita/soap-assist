@@ -16,7 +16,7 @@
 *{box-sizing:border-box}
 html,body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--font);font-size:16px;line-height:1.6}
 [hidden]{display:none!important}
-.app{max-width:760px;margin:0 auto;padding:12px 16px 96px}
+.app{max-width:760px;margin:0 auto;padding:12px 16px 150px}
 header{display:flex;align-items:center;gap:8px;padding:6px 0 12px;flex-wrap:wrap}
 h1{font-size:1.15rem;margin:0 auto 0 0}
 .nav{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
@@ -70,19 +70,36 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid #
 .badge.mode{background:var(--pine-soft);color:var(--pine)}
 .badge.edit{background:var(--edit-bg);color:var(--edit)}
 .chatbox{border:1px dashed var(--pine);border-radius:10px;padding:12px;margin-bottom:14px;background:#FAFCFB}
-.chatbox ol{margin:0 0 4px;padding-left:1.3em;font-size:.88rem}
+.chat-one{width:100%;padding:13px}
+.chat-hint{margin:8px 0 0}
+.linkbtn{background:none;border:none;color:var(--pine);text-decoration:underline;font:inherit;font-size:.85rem;padding:6px 0 0}
 .chatbox details{margin-top:8px;font-size:.85rem}
+.chatbox details summary{color:var(--muted);cursor:pointer}
 .chatbox details textarea{font-size:.8rem}
+.chatbox details .sub{margin:8px 0 2px}
+.prog{margin:0 0 12px}
+.prog-head{display:flex;justify-content:space-between;font-size:.82rem;color:var(--pine);margin-bottom:3px}
+.prog-track{height:8px;background:var(--pine-soft);border-radius:4px;overflow:hidden}
+.prog-track i{display:block;height:100%;width:0;background:var(--pine);border-radius:4px;transition:width .4s linear}
 .soap-block{margin-bottom:12px}
 .soap-block .lh{display:flex;align-items:center;gap:6px;margin-bottom:2px}
 .soap-block .lh span.t{font-weight:700;font-size:.95rem;color:var(--ink);margin-right:auto}
 #bottomBar{position:fixed;left:0;right:0;bottom:0;padding:10px 16px calc(10px + env(safe-area-inset-bottom,0));background:rgba(246,248,247,.96);border-top:1px solid var(--line)}
 #bottomBar .inner{max-width:760px;margin:0 auto;display:flex;gap:8px}
 #bottomBar .btn{flex:1;padding:12px}
+#bottomBar .bar-top{max-width:760px;margin:0 auto 8px}
+#bottomBar .bar-top .btn{width:100%}
 .hist-item{display:block;width:100%;text-align:left;font:inherit;color:var(--ink);background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:8px}
 .hist-top{display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:.85rem;color:var(--muted)}
 .hist-name{font-weight:700;margin:2px 0}
 .hist-snip{font-size:.85rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hist-tags{margin-top:3px}
+.tag{display:inline-block;font-size:.76rem;border-radius:6px;padding:1px 8px;margin:2px 4px 0 0;background:var(--pine-soft);color:var(--pine)}
+.tag.rx{background:var(--edit-bg);color:var(--edit)}
+.hist-group{display:flex;align-items:baseline;gap:8px;font-weight:700;font-size:.95rem;margin:16px 0 6px;padding-bottom:4px;border-bottom:1px solid var(--line)}
+.hist-group .sub{font-weight:400}
+.tagfields{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+@media (max-width:480px){.tagfields{grid-template-columns:1fr}}
 .hist-row{display:flex;gap:6px;align-items:flex-start}
 .hist-row .hist-item{flex:1;min-width:0}
 .empty{color:var(--muted);text-align:center;padding:24px 0}
@@ -92,32 +109,22 @@ dialog label{margin-bottom:10px}
 dialog .more label:last-child{margin-bottom:4px}
 .check{display:flex;gap:8px;align-items:center;color:var(--ink)}
 .check input{width:auto;margin:0}
-#print{display:none;--fs:10.5pt;font-size:var(--fs);line-height:1.6;color:#000;background:#fff}
-#print,#print *{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-#print .page{width:190mm;height:262mm;margin:0 auto;overflow:hidden;display:flex;flex-direction:column;
-  break-inside:avoid;page-break-inside:avoid;break-after:page;page-break-after:always}
-#print .page:last-child{break-after:auto;page-break-after:auto}
-#print h1{font-size:15pt;margin:0 0 1mm;line-height:1.3}
-#print .ps-head{flex:none;display:flex;justify-content:space-between;align-items:flex-end;border-bottom:1.5pt solid #000;padding-bottom:2mm;margin-bottom:4mm}
-#print .ps-head.cont{margin-bottom:3mm}
-#print .ps-head.cont h1{font-size:12pt}
-#print .ps-info{flex:none;table-layout:fixed;width:190mm;border-collapse:collapse;margin-bottom:4mm}
-#print .ps-info td{padding:0 2mm 0 0;font-size:10pt;vertical-align:top}
-#print .ps-body{flex:1 1 auto;min-height:0;overflow:hidden}
-#print .ps-sec + .ps-sec{margin-top:4mm}
-#print .ps-sec h3{font-size:11pt;margin:0 0 1mm;border-left:3pt solid #000;padding-left:2mm;background:#eee;line-height:1.5}
-#print .ps-sec .txt{white-space:pre-wrap;padding-left:5mm}
-#print .ps-text{white-space:pre-wrap;line-height:1.85}
-#print .ps-foot{flex:none;border-top:.5pt solid #000;padding-top:2mm;font-size:9pt}
-#print .ps-foot-row{display:flex;justify-content:space-between;gap:6mm}
-#print .ps-foot-row > :first-child{flex:1}
-#print .ps-note{margin-top:1mm}
+#printSheet{display:none}
 @media (max-width:420px){#recBtn{width:96px;height:96px}#timer{font-size:2rem}.seg button{padding:8px 12px}}
-@page{size:A4 portrait;margin:8mm}
 @media print{
-  html,body{background:#fff;margin:0}
-  body > *:not(#print){display:none !important}
-  #print{display:block}
+  @page{size:A4;margin:14mm}
+  .app,#bottomBar,dialog{display:none!important}
+  body{background:#fff}
+  #printSheet{display:block;font-size:10.5pt;line-height:1.6;color:#000}
+  #printSheet h1{font-size:15pt;margin:0 0 1mm}
+  .ps-head{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:1.5pt solid #000;padding-bottom:2mm;margin-bottom:4mm}
+  .ps-info{display:grid;grid-template-columns:repeat(3,1fr);gap:1mm 6mm;margin-bottom:5mm}
+  .ps-sec{margin-bottom:4mm;break-inside:avoid}
+  .ps-sec h3{font-size:11pt;margin:0 0 1mm;border-left:3pt solid #000;padding-left:2mm}
+  .ps-sec div{white-space:pre-wrap;padding-left:5mm}
+  .ps-body{white-space:pre-wrap;font-size:11pt;line-height:1.85}
+  .ps-foot{margin-top:8mm;border-top:.5pt solid #000;padding-top:2mm;display:flex;justify-content:space-between;gap:6mm;font-size:9pt}
+  .ps-note{font-size:9pt;margin-top:2mm}
 }
 </style>
 </head>
@@ -193,27 +200,30 @@ dialog .more label:last-child{margin-bottom:4px}
       </div>
 
       <div data-panel="soap">
-        <div class="chatbox" id="chatSoapBox" data-chat-only>
-          <ol>
-            <li>下のボタンで依頼文をコピーし、<span data-chat-name>Claude</span>を開きます</li>
-            <li><span data-chat-name>Claude</span>の入力欄に貼り付けて送信します</li>
-            <li>返ってきた内容をコピーし、ここに戻って貼り付けます</li>
-          </ol>
-          <div class="btns">
-            <button class="btn primary" id="chatSoapOpen">依頼文をコピーして<span data-chat-name>Claude</span>を開く</button>
-          </div>
-          <textarea id="chatSoapIn" rows="4" placeholder="チャットの返答をここに貼り付け" style="margin-top:10px"></textarea>
-          <div class="btns" style="margin-top:6px">
-            <button class="btn" id="chatSoapPaste">クリップボードから貼り付け</button>
-            <button class="btn primary" id="chatSoapImport">SOAPに取り込む</button>
-          </div>
-          <details id="chatSoapShow"><summary>依頼文を表示（コピーがうまくいかないとき）</summary><textarea id="chatSoapPrompt" rows="6" readonly></textarea></details>
+        <div class="prog" id="prog" hidden role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-label="処理の進み具合">
+          <div class="prog-head"><span id="progLabel"></span><span id="progEta"></span></div>
+          <div class="prog-track"><i id="progBar"></i></div>
         </div>
         <div class="btns" style="margin:0 0 12px">
           <button class="btn primary" id="soapBtn" data-api-only>SOAPに変換</button>
           <button class="btn" id="copyAllBtn">SOAPをまとめてコピー</button>
         </div>
+        <div class="tagfields">
+          <label>診断名<input id="tagDx" placeholder="例：慢性腎臓病, 膵炎（疑い）"></label>
+          <label>処方薬<input id="tagRx" placeholder="例：メロキシカム, マロピタント"></label>
+        </div>
         <div id="soapFields"></div>
+        <div class="chatbox" id="chatSoapBox" data-chat-only style="margin:4px 0 0">
+          <p class="sub chat-hint" id="chatSoapHint" style="margin-top:0"></p>
+          <button class="linkbtn" id="chatSoapReopen" hidden></button>
+          <details id="chatSoapShow"><summary>うまくいかないとき</summary>
+            <p class="sub">返答をここに長押しで貼り付けて「取り込む」</p>
+            <textarea id="chatSoapIn" rows="4"></textarea>
+            <div class="btns" style="margin-top:6px"><button class="btn primary" id="chatSoapImport">取り込む</button></div>
+            <p class="sub">依頼文（長押しでコピー）</p>
+            <textarea id="chatSoapPrompt" rows="5" readonly></textarea>
+          </details>
+        </div>
       </div>
 
       <div data-panel="trans" hidden>
@@ -224,15 +234,14 @@ dialog .more label:last-child{margin-bottom:4px}
 
       <div data-panel="report" hidden>
         <div class="chatbox" id="chatReportBox" data-chat-only>
-          <ol>
-            <li>下のボタンで依頼文をコピーし、<span data-chat-name>Claude</span>を開いて送信します</li>
-            <li>返ってきたレポートをコピーし、下の欄に貼り付けます</li>
-          </ol>
-          <div class="btns">
-            <button class="btn primary" id="chatReportOpen">依頼文をコピーして<span data-chat-name>Claude</span>を開く</button>
-            <button class="btn" id="chatReportPaste">クリップボードから貼り付け</button>
-          </div>
-          <details id="chatReportShow"><summary>依頼文を表示（コピーがうまくいかないとき）</summary><textarea id="chatReportPrompt" rows="6" readonly></textarea></details>
+          <button class="btn primary chat-one" id="chatReportGo"></button>
+          <p class="sub chat-hint" id="chatReportHint"></p>
+          <button class="linkbtn" id="chatReportReopen" hidden></button>
+          <details id="chatReportShow"><summary>うまくいかないとき</summary>
+            <p class="sub">返答は、下のレポート欄に長押しで直接貼り付けられます。</p>
+            <p class="sub">依頼文（長押しでコピー）</p>
+            <textarea id="chatReportPrompt" rows="5" readonly></textarea>
+          </details>
         </div>
         <div class="btns" style="margin:0 0 12px">
           <button class="btn primary" id="reportBtn" data-api-only>レポートを作成</button>
@@ -246,8 +255,15 @@ dialog .more label:last-child{margin-bottom:4px}
   <!-- ===== 履歴画面 ===== -->
   <div id="viewHist" hidden>
     <section>
-      <input id="histSearch" placeholder="患者名・飼い主名・獣医師名で検索" aria-label="履歴を検索">
+      <input id="histSearch" placeholder="患者名・飼い主名・獣医師名・診断名・薬剤名で検索" aria-label="履歴を検索">
       <div class="btns">
+        <select id="histSort" style="width:auto" aria-label="並び順">
+          <option value="dateDesc">日付（新しい順）</option>
+          <option value="dateAsc">日付（古い順）</option>
+          <option value="name">患者名</option>
+          <option value="dx">診断名ごと</option>
+          <option value="rx">薬剤名ごと</option>
+        </select>
         <select id="histFilter" style="width:auto"><option value="">すべての状態</option><option value="下書き">下書きのみ</option><option value="確認済み">確認済みのみ</option></select>
         <select id="histNoName" style="width:auto"><option value="">すべて</option><option value="1">患者名が未入力のもの</option></select>
       </div>
@@ -258,7 +274,9 @@ dialog .more label:last-child{margin-bottom:4px}
   </div>
 </div>
 
-<div id="bottomBar"><div class="inner">
+<div id="bottomBar">
+  <div class="bar-top" data-chat-only><button class="btn primary chat-one" id="chatSoapGo"></button></div>
+  <div class="inner">
   <button class="btn" id="newBtn">次の患者へ</button>
   <button class="btn primary" id="printBtn">SOAPを印刷</button>
 </div></div>
@@ -304,7 +322,7 @@ dialog .more label:last-child{margin-bottom:4px}
   <div class="btns"><button class="btn primary" id="cfgSave">保存</button><button class="btn" id="cfgClose">閉じる</button></div>
 </dialog>
 
-<div id="print"></div>
+<div id="printSheet"></div>
 
 <script>
 const $ = id => document.getElementById(id);
@@ -367,6 +385,8 @@ function applyEngineUI(){
   document.querySelectorAll('[data-chat-only]').forEach(e => e.hidden = !chat);
   document.querySelectorAll('[data-api-only]').forEach(e => e.hidden = chat);
   document.querySelectorAll('[data-chat-name]').forEach(e => e.textContent = CHAT[cfg.chat].name);
+  try{ renderChatState(); }catch(e){}
+  $('soapBtn2').textContent = chat ? `${CHAT[cfg.chat].name}でSOAPを作り直す` : 'SOAPを作り直す';
   $('levelWrap').hidden = cfg.stt === 'browser';
   $('dlBtn').hidden = $('reTransBtn').hidden = cfg.stt === 'browser' && segments.length === 0;
   const msgs = [];
@@ -390,9 +410,20 @@ function newCase(){
   return {id: Date.now().toString(36)+Math.random().toString(36).slice(2,6), created:new Date().toISOString(),
     mode:'診察', status:'下書き', durationSec:0,
     patient:{name:'',species:'',breed:'',age:'',sex:'',category:'',owner:'',vet:cfg.lastVet||''},
-    transcript:'', soap:{S:'',O:'',A:'',P:'',bikou:'',memo:''}, aiSoap:{}, report:''};
+    transcript:'', soap:{S:'',O:'',A:'',P:'',bikou:'',memo:''}, aiSoap:{}, report:'', dx:[], rx:[], chatWait:''};
+}
+// 診断名・処方薬のリスト化（配列でも「、」「,」区切りの文字列でも受け付ける）
+function toTags(v){
+  const arr = Array.isArray(v) ? v : String(v ?? '').split(/[,，、\n]/);
+  return [...new Set(arr.map(s => String(s).trim()).filter(s => s && s !== 'なし' && s !== '記載なし'))];
 }
 let cur = newCase();
+// チャットを開いている間にスマホがページを再読み込みしても、作業中のカルテに戻る
+(() => {
+  const id = store.get('soapAssist.current', '');
+  const c = id && store.get('soapAssist.history', []).find(x => x.id === id);
+  if(c){ cur = {...newCase(), ...JSON.parse(JSON.stringify(c))}; delete cur.updated; }
+})();
 let segments = [];   // 現在のカルテの録音Blob（端末メモリ内のみ・保存しない）
 
 $('soapFields').innerHTML = SOAP_KEYS.map(([k,l]) =>
@@ -406,6 +437,7 @@ function render(){
   document.querySelectorAll('[data-k]').forEach(e => e.value = cur.patient[e.dataset.k] ?? '');
   SOAP_KEYS.forEach(([k]) => $('soap_'+k).value = cur.soap[k] || '');
   $('transcript').value = cur.transcript; $('report').value = cur.report;
+  $('tagDx').value = (cur.dx||[]).join(', '); $('tagRx').value = (cur.rx||[]).join(', ');
   setMode(cur.mode, false); renderStatus(); renderRecInfo(); renderEdited(); renderMoreSum();
   $('reTransBtn').disabled = $('dlBtn').disabled = segments.length === 0;
   applyEngineUI();
@@ -442,6 +474,8 @@ document.querySelectorAll('[data-k]').forEach(e => e.addEventListener('input', (
 document.querySelectorAll('[data-soap]').forEach(e => e.addEventListener('input', () => { cur.soap[e.dataset.soap] = e.value; renderEdited(); touch(); }));
 $('transcript').addEventListener('input', e => { cur.transcript = e.target.value; touch(); });
 $('report').addEventListener('input', e => { cur.report = e.target.value; touch(); });
+$('tagDx').addEventListener('input', e => { cur.dx = toTags(e.target.value); touch(); });
+$('tagRx').addEventListener('input', e => { cur.rx = toTags(e.target.value); touch(); });
 
 function hasContent(c){ return c.transcript || c.patient.name || Object.values(c.soap).some(Boolean) || c.report; }
 function saveCase(){
@@ -449,6 +483,7 @@ function saveCase(){
   const list = store.get('soapAssist.history', []).filter(c => c.id !== cur.id);
   list.unshift({...cur, updated:new Date().toISOString()});
   if(!store.set('soapAssist.history', list.slice(0,200))) setStatus('端末の保存容量が不足しています。履歴を整理してください。', true);
+  store.set('soapAssist.current', cur.id);   // 再読み込みされても、作業中のカルテを開き直せるように
 }
 
 function setMode(m, save=true){
@@ -483,8 +518,69 @@ async function copyText(text, label){
   setStatus(ok ? `${label}をコピーしました` : 'コピーできませんでした。長押しで選択してコピーしてください。', !ok);
 }
 async function readClipboard(){
-  try{ return await navigator.clipboard.readText(); }
-  catch(e){ setStatus('クリップボードを読み取れませんでした。欄を長押しして「貼り付け」を選んでください。', true); return null; }
+  try{ const t = await navigator.clipboard.readText(); return t && t.trim() ? t : null; }
+  catch(e){ return null; }
+}
+
+/* ================= 待ち時間の目安バー ================= */
+// 録音を止めてからSOAPができるまで（文字起こし＋SOAP作成）を1本のバーで表示する。
+// 目安＝固定時間＋量×係数。段階ごとに実際の時間から係数を学習して、次の目安に反映する
+const PROG_DEF = {
+  trans:  {base:3000, per:120},   // 録音1秒あたりのミリ秒（Geminiの文字起こし）
+  soap:   {base:5000, per:6},     // 文字起こし1文字あたりのミリ秒
+  report: {base:4000, per:5}      // SOAP1文字あたりのミリ秒
+};
+const CHARS_PER_SEC = 5;          // 録音1秒あたりの文字数のおおよそ（SOAPの目安を先に出すため）
+const prog = {active:false, t0:0, est:0, stage:'', stageT0:0, stageEst:0, stageSize:0, timer:null};
+function progEstimate(kind, size){
+  const d = PROG_DEF[kind], per = store.get('soapAssist.speed', {})[kind] ?? d.per;
+  return d.base + per*Math.max(0, size);
+}
+function progStart(host, label, totalEst){
+  // バーは各タブのボタン列（「SOAPをまとめてコピー」「レポートを作成」）の上に置く
+  const row = (host === 'report' ? $('reportBtn') : $('copyAllBtn')).parentElement;
+  row.parentElement.insertBefore($('prog'), row);
+  Object.assign(prog, {active:true, t0:Date.now(), est:Math.max(3000, totalEst), stage:''});
+  $('progLabel').textContent = label; $('prog').hidden = false;
+  clearInterval(prog.timer); prog.timer = setInterval(progTick, 300); progTick();
+  // 録音停止からの自動処理では、バーが見える位置まで自動でスクロールする
+  if(host === 'soap') requestAnimationFrame(() => $('prog').scrollIntoView({behavior:'smooth', block:'center'}));
+}
+// 段階の切り替え（文字起こし → SOAP作成）。前の段階の実時間を学習し、残りの目安を見直す
+function progStage(kind, label, size){
+  progLearn();
+  const now = Date.now(), stageEst = progEstimate(kind, size);
+  Object.assign(prog, {stage:kind, stageT0:now, stageEst, stageSize:size});
+  prog.est = Math.max(prog.est, (now - prog.t0) + stageEst);
+  if(kind === 'soap') prog.est = (now - prog.t0) + stageEst;
+  $('progLabel').textContent = label; progTick();
+}
+function progLearn(){
+  if(!prog.stage || prog.stageSize <= 0) return;
+  const elapsed = Date.now() - prog.stageT0, d = PROG_DEF[prog.stage];
+  if(elapsed < prog.stageEst*3){
+    const learned = store.get('soapAssist.speed', {});
+    const now = Math.max(0, (elapsed - d.base) / prog.stageSize);
+    learned[prog.stage] = (learned[prog.stage] ?? d.per)*0.7 + now*0.3;
+    store.set('soapAssist.speed', learned);
+  }
+  prog.stage = '';
+}
+function progTick(){
+  const el_ = Date.now() - prog.t0, est = prog.est;
+  // 目安の時間までに90%、それを超えたらゆっくり97%に近づける
+  const pct = el_ <= est ? el_/est*90 : 90 + 7*(1 - Math.exp(-(el_-est)/est));
+  $('progBar').style.width = pct.toFixed(1) + '%';
+  $('prog').setAttribute('aria-valuenow', Math.round(pct));
+  const rest = Math.ceil((est - el_)/1000);
+  $('progEta').textContent = rest > 0 ? `あと約${rest}秒` : 'もう少しかかっています…';
+}
+function progEnd(ok){
+  if(!prog.active) return;
+  if(ok) progLearn(); else prog.stage = '';
+  clearInterval(prog.timer); prog.active = false;
+  $('progBar').style.width = ok ? '100%' : '0';
+  setTimeout(() => { if(!prog.active){ $('prog').hidden = true; $('progBar').style.width = '0'; } }, ok ? 700 : 0);
 }
 const soapText = () => SOAP_KEYS.filter(([k]) => k!=='memo').map(([k,l]) => `【${l}】\n${cur.soap[k]||'記載なし'}`).join('\n\n');
 $('soapFields').addEventListener('click', e => {
@@ -626,16 +722,15 @@ function appendTranscript(text, note=''){
 function afterTranscript(){
   if(cfg.llm === 'chat'){
     showTab('soap'); prepareChatPrompt('soap');
-    setStatus(`文字起こしができました。SOAPタブの「依頼文をコピーして${CHAT[cfg.chat].name}を開く」を押してください。`);
-    $('chatSoapOpen').scrollIntoView({behavior:'smooth', block:'center'});
-  }else makeSoap();
+    setStatus(`文字起こしができました。画面下の「${CHAT[cfg.chat].name}でSOAPを作成」を押してください。`);
+  }else makeSoap({auto:true});
 }
 
 function addAudio(blob, sec){
   segments.push(blob); cur.durationSec += sec || 0;
   renderRecInfo(); $('reTransBtn').disabled = $('dlBtn').disabled = false; applyEngineUI();
   if(autoStopped) setStatus(`無音が${cfg.silenceMin}分続いたため録音を停止しました。続けて文字起こしします。`);
-  transcribeAudio([blob]);
+  transcribeAudio([blob], sec || 0);
 }
 $('fileIn').onchange = async e => {
   const f = e.target.files[0]; e.target.value=''; if(!f) return;
@@ -645,7 +740,7 @@ $('fileIn').onchange = async e => {
 };
 $('reTransBtn').onclick = () => {
   if(!confirm('文字起こしを最初からやり直します。手で直した文字起こしは消えます。よろしいですか？')) return;
-  cur.transcript=''; $('transcript').value=''; transcribeAudio(segments);
+  cur.transcript=''; $('transcript').value=''; transcribeAudio(segments, cur.durationSec);
 };
 $('dlBtn').onclick = () => {
   segments.forEach((b, i) => {
@@ -668,6 +763,7 @@ async function toWavChunks(blob, chunkSec=300){
   const data = (await off.startRendering()).getChannelData(0);
   const per = chunkSec*rate, out = [];
   for(let i=0;i<data.length;i+=per) out.push(encodeWav(data.subarray(i, Math.min(i+per, data.length)), rate));
+  out.duration = decoded.duration;
   return out;
 }
 function encodeWav(samples, rate){
@@ -754,9 +850,17 @@ function transcribePart(b64, idx, total, prevTail){
 }
 
 let busy = false;
-async function transcribeAudio(blobs){
+async function transcribeAudio(blobs, audioSec){
   if(busy){ setStatus('処理中です。終わってからもう一度お試しください。', true); return; }
   busy = true; $('reTransBtn').disabled = true;
+  // 録音停止〜SOAP完成までの目安。チャット方式ではSOAPはチャット側で作るので、文字起こし分だけ
+  const auto = cfg.llm !== 'chat';
+  const total = progEstimate('trans', audioSec)
+    + (auto ? progEstimate('soap', cur.transcript.length + audioSec*CHARS_PER_SEC) : 0);
+  showTab('soap');
+  progStart('soap', '文字起こし中', total);
+  progStage('trans', auto ? '文字起こし中（このあとSOAPを作成します）' : '文字起こし中', audioSec);
+  prog.est = Math.max(prog.est, total);
   try{
     for(let b=0;b<blobs.length;b++){
       setStatus('音声を変換しています…');
@@ -768,8 +872,9 @@ async function transcribeAudio(blobs){
       }
       appendTranscript(text);
     }
-  }catch(err){ setStatus('文字起こしに失敗しました：'+err.message, true); return; }
+  }catch(err){ progEnd(false); setStatus('文字起こしに失敗しました：'+err.message, true); return; }
   finally{ busy = false; $('reTransBtn').disabled = segments.length===0; renderRecInfo(); }
+  if(!auto) progEnd(true);
   afterTranscript();
 }
 
@@ -799,7 +904,9 @@ const SOAP_BODY =
   【会計項目候補】
   [処置/検査] 項目, 項目
   [処方] 薬剤名 用量 日数
-・memo：上記の保留事項に加え、聞き取りが曖昧な箇所、数値や薬剤名の誤認識が疑われる箇所など、獣医師が確認すべき点`;
+・memo：上記の保留事項に加え、聞き取りが曖昧な箇所、数値や薬剤名の誤認識が疑われる箇所など、獣医師が確認すべき点
+・dx：A で獣医師が述べた診断名・鑑別診断名を、文字列の配列で列挙する。確定していないものは名前の後に「（疑い）」を付ける（例："膵炎（疑い）"）。症状名しか述べられていない場合や、診断が述べられていない場合は空の配列にする
+・rx：当日処方した、または処方すると決まった薬剤名を、文字列の配列で列挙する。会話で言った通りの名前で書き、用量・日数・剤形は含めない。処方がなければ空の配列にする`;
 
 const SOAP_RULES = {
 '診察': `
@@ -819,7 +926,7 @@ const SOAP_RULES = {
 ・言い直しや訂正があった場合は、最後に述べた内容を採用する
 ・「Sは〜」「所見は〜」のように獣医師がセクションを指定した場合は、その指定に従う`
 };
-const JSON_SHAPE = '{"S":"","O":"","A":"","P":"","bikou":"","memo":""}';
+const JSON_SHAPE = '{"S":"","O":"","A":"","P":"","bikou":"","memo":"","dx":[],"rx":[]}';
 const OUT_API  = `\n出力はJSONのみ。前置きやコードフェンスは付けない。各値の改行は \\n で表す。形式：${JSON_SHAPE}`;
 const OUT_CHAT = `\n出力は次の形式のJSONを、\`\`\`json で始まるコードブロック1つだけで返す。前置き・説明・感想は書かない。各値の改行は \\n で表す。形式：${JSON_SHAPE}`;
 const soapUser = () => `${patientLine()}\n\n文字起こし：\n${cur.transcript}`;
@@ -880,6 +987,7 @@ function parseSoap(text){
 function applySoap(obj){
   SOAP_KEYS.forEach(([k]) => cur.soap[k] = (obj[k] ?? '').toString().trim());
   cur.aiSoap = {...cur.soap}; cur.status = '下書き';
+  cur.dx = toTags(obj.dx); cur.rx = toTags(obj.rx);
   render(); saveCase(); showTab('soap');
   setStatus('SOAP下書きができました。内容を確認・修正し、問題なければ「確認済みにする」を押してください。');
 }
@@ -890,19 +998,28 @@ function confirmRegen(){
   const edited = SOAP_KEYS.some(([k]) => cur.aiSoap && k in cur.aiSoap && (cur.soap[k]||'') !== (cur.aiSoap[k]||''));
   return !edited || confirm('手で編集したSOAPは、作り直すと上書きされます。よろしいですか？');
 }
-async function makeSoap(){
-  if(!cur.transcript.trim()){ setStatus('文字起こしが空です。録音するか、文字起こし欄に入力してください。', true); return; }
+// auto：録音停止から自動で作るとき（待ち時間のバーを出す）。作り直しボタンからはバーを出さない
+async function makeSoap({auto = false} = {}){
+  if(!cur.transcript.trim()){ progEnd(false); setStatus('文字起こしが空です。録音するか、文字起こし欄に入力してください。', true); return; }
   if(busy) return;
   busy = true; setStatus('SOAPに変換しています…'); $('soapBtn').disabled = $('soapBtn2').disabled = true;
+  showTab('soap');
+  if(auto){
+    if(!prog.active) progStart('soap', 'SOAPを作成中', progEstimate('soap', cur.transcript.length));
+    progStage('soap', 'SOAPを作成中', cur.transcript.length);
+  }
   try{
-    applySoap(parseSoap(await callLLM(SOAP_BODY + SOAP_RULES[cur.mode] + OUT_API, soapUser(), {json:true})));
-  }catch(err){ setStatus('SOAP変換に失敗しました：'+err.message, true); }
+    const text = await callLLM(SOAP_BODY + SOAP_RULES[cur.mode] + OUT_API, soapUser(), {json:true});
+    progEnd(true);
+    applySoap(parseSoap(text));
+  }catch(err){ progEnd(false); setStatus('SOAP変換に失敗しました：'+err.message, true); }
   finally{ busy = false; $('soapBtn').disabled = $('soapBtn2').disabled = false; }
 }
 $('soapBtn').onclick = () => { if(confirmRegen()) makeSoap(); };
 $('soapBtn2').onclick = () => {
   cur.transcript = $('transcript').value;
-  if(cfg.llm === 'chat'){ afterTranscript(); return; }
+  // チャット方式では、このボタンからそのまま依頼文をコピーしてチャットを開く
+  if(cfg.llm === 'chat'){ if(confirmRegen()){ showTab('soap'); startChatSoap(); } return; }
   if(confirmRegen()) makeSoap();
 };
 
@@ -913,24 +1030,71 @@ function copyAndOpen(text, what){
   if(!ok && navigator.clipboard){
     navigator.clipboard.writeText(text)
       .then(() => setStatus(`${what}をコピーしました。${name}に貼り付けて送信してください。`))
-      .catch(() => setStatus('コピーできませんでした。「依頼文を表示」を開いて、長押しでコピーしてください。', true));
+      .catch(() => setStatus('コピーできませんでした。「うまくいかないとき」を開いて、依頼文を長押しでコピーしてください。', true));
   }
   window.open(CHAT[cfg.chat].url, '_blank', 'noopener');
   if(ok) setStatus(`${what}をコピーしました。${name}に貼り付けて送信してください。`);
 }
-$('chatSoapOpen').onclick = () => {
+/* チャット連携は1つのボタンで完結させる：
+   ・押すと依頼文をコピーしてチャットを開き、「返答待ち」になる
+   ・返答をコピーしてこの画面に戻ると、クリップボードを読んで自動で取り込む
+   ・自動で取り込めなかったときは、同じボタン（「コピーした返答を取り込む」）を押せば取り込む */
+const chatName = () => CHAT[cfg.chat].name;
+const isPromptText = t => t.includes('# 指示');   // まだ依頼文がコピーされたまま（返答をコピーしていない）
+function renderChatState(){
+  const n = chatName(), w = cur.chatWait || '';
+  $('chatSoapGo').textContent = w==='soap' ? 'コピーした返答を取り込む' : `${n}でSOAPを作成`;
+  $('chatSoapHint').textContent = w==='soap'
+    ? `${n}の返答をコピーしてこの画面に戻ると、自動で取り込みます。取り込まれないときは画面下の「コピーした返答を取り込む」を押してください。`
+    : `画面下の「${n}でSOAPを作成」を押すと、依頼文をコピーして${n}を開きます。貼り付けて送信し、返答をコピーしてこの画面に戻ってください。`;
+  $('chatSoapReopen').hidden = w!=='soap'; $('chatSoapReopen').textContent = `もう一度${n}を開く`;
+  $('chatReportGo').textContent = w==='report' ? 'コピーした返答を取り込む' : `${n}でレポートを作成`;
+  $('chatReportHint').textContent = w==='report'
+    ? `${n}の返答をコピーしてこの画面に戻ると、自動で取り込みます。取り込まれないときは上のボタンを押してください。`
+    : `押すと依頼文をコピーして${n}を開きます。貼り付けて送信し、返答をコピーしてこの画面に戻ってください。`;
+  $('chatReportReopen').hidden = w!=='report'; $('chatReportReopen').textContent = `もう一度${n}を開く`;
+}
+function setChatWait(w){ cur.chatWait = w; renderChatState(); saveCase(); }
+
+function startChatSoap(){
   cur.transcript = $('transcript').value;
   if(!cur.transcript.trim()){ setStatus('文字起こしが空です。先に録音してください。', true); return; }
   copyAndOpen(prepareChatPrompt('soap'), 'SOAPの依頼文');
+  setChatWait('soap');
+}
+$('chatSoapGo').onclick = async () => {
+  if(cur.chatWait !== 'soap'){ startChatSoap(); return; }
+  const t = await readClipboard();
+  if(t == null){ openManualSoap('クリップボードを読み取れませんでした。下の欄に長押しで貼り付けて「取り込む」を押してください。'); return; }
+  if(isPromptText(t)){ setStatus(`まだ${chatName()}の返答がコピーされていません。返答の下にあるコピーボタンを押してから戻ってください。`, true); return; }
+  importSoapText(t, false);
 };
+$('chatSoapReopen').onclick = startChatSoap;
 $('chatSoapShow').addEventListener('toggle', () => { if($('chatSoapShow').open) prepareChatPrompt('soap'); });
-$('chatSoapPaste').onclick = async () => { const t = await readClipboard(); if(t != null) $('chatSoapIn').value = t; };
+// 手で貼り付ける欄を開く（クリップボードが読めない機種や、読み取りに失敗したとき）
+function openManualSoap(msg){
+  $('chatSoapShow').open = true; prepareChatPrompt('soap');
+  setStatus(msg, true);
+  $('chatSoapIn').focus();
+}
+function importSoapText(t, auto){
+  let obj;
+  try{ obj = parseSoap(t); if(!['S','O','A','P'].some(k => String(obj[k] ?? '').trim())) throw new Error('empty'); }
+  catch(e){
+    if(auto) return false;   // 自動のときは、関係ない内容がコピーされていても何もしない
+    $('chatSoapIn').value = t;
+    openManualSoap('返答を読み取れませんでした。返答の下にあるコピーボタンで、返答全体をコピーし直してください。');
+    return false;
+  }
+  if(!confirmRegen()) return false;
+  applySoap(obj); $('chatSoapIn').value = ''; $('chatSoapShow').open = false; setChatWait('');
+  setStatus(`${chatName()}の返答を取り込みました。内容を確認・修正し、問題なければ「確認済みにする」を押してください。`);
+  return true;
+}
 $('chatSoapImport').onclick = () => {
   const t = $('chatSoapIn').value.trim();
   if(!t){ setStatus('チャットの返答を貼り付けてください。', true); return; }
-  if(!confirmRegen()) return;
-  try{ applySoap(parseSoap(t)); $('chatSoapIn').value = ''; }
-  catch(e){ setStatus('返答を読み取れませんでした。返答の { から } までを、まるごとコピーして貼り付けてください。', true); }
+  importSoapText(t, false);
 };
 
 /* ================= オーナー向けレポート ================= */
@@ -938,135 +1102,92 @@ $('reportBtn').onclick = async () => {
   if(!hasSoap()){ setStatus('先にSOAPを作成してください。', true); return; }
   if(cur.report.trim() && !confirm('作成済みのレポートを作り直します。手で直した内容は上書きされます。よろしいですか？')) return;
   setStatus('オーナー向けレポートを作成しています…'); $('reportBtn').disabled = true;
+  progStart('report', 'レポートを作成中', progEstimate('report', reportUser().length));
+  progStage('report', 'レポートを作成中', reportUser().length);
   try{
     cur.report = stripMd(await callLLM(reportSys(), reportUser(), {maxTokens:2500}));
+    progEnd(true);
     $('report').value = cur.report; saveCase();
     setStatus('レポートができました。内容を確認してから印刷してください。');
-  }catch(err){ setStatus('レポート作成に失敗しました：'+err.message, true); }
+  }catch(err){ progEnd(false); setStatus('レポート作成に失敗しました：'+err.message, true); }
   finally{ $('reportBtn').disabled = false; }
 };
-$('chatReportOpen').onclick = () => {
+function startChatReport(){
   if(!hasSoap()){ setStatus('先にSOAPを作成してください。', true); return; }
   copyAndOpen(prepareChatPrompt('report'), 'レポートの依頼文');
+  setChatWait('report');
+}
+$('chatReportGo').onclick = async () => {
+  if(cur.chatWait !== 'report'){ startChatReport(); return; }
+  const t = await readClipboard();
+  if(t == null){
+    $('chatReportShow').open = true; prepareChatPrompt('report');
+    setStatus('クリップボードを読み取れませんでした。下のレポート欄に長押しで貼り付けてください。', true);
+    $('report').focus(); return;
+  }
+  if(isPromptText(t)){ setStatus(`まだ${chatName()}の返答がコピーされていません。返答の下にあるコピーボタンを押してから戻ってください。`, true); return; }
+  importReportText(t);
 };
+$('chatReportReopen').onclick = startChatReport;
 $('chatReportShow').addEventListener('toggle', () => { if($('chatReportShow').open) prepareChatPrompt('report'); });
-$('chatReportPaste').onclick = async () => {
-  const t = await readClipboard(); if(t == null) return;
-  if(cur.report.trim() && !confirm('作成済みのレポートを貼り付けた内容で置き換えます。よろしいですか？')) return;
-  cur.report = stripMd(t); $('report').value = cur.report; saveCase();
-  setStatus('レポートを貼り付けました。内容を確認してから印刷してください。');
-};
+function importReportText(t){
+  if(cur.report.trim() && !confirm('作成済みのレポートを、コピーした返答で置き換えます。よろしいですか？')) return false;
+  cur.report = stripMd(t); $('report').value = cur.report; setChatWait('');
+  setStatus(`${chatName()}の返答をレポートに取り込みました。内容を確認してから印刷してください。`);
+  return true;
+}
+// レポート欄に手で貼り付けたら、返答待ちを終える
+$('report').addEventListener('input', () => { if(cur.chatWait === 'report'){ cur.chatWait = ''; renderChatState(); } });
 
-/* ================= 印刷（A4縦・印刷専用の入れ物 #print に作り直す） ================= */
-const caseDate = () => new Date(cur.created).toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric',weekday:'short'});
-const footEl = (l, r, note) => {
-  const f = el('div','ps-foot'), row = el('div','ps-foot-row');
-  row.append(el('div',null,l), el('div',null,r), el('div','pg','9/9'));
-  f.append(row); if(note) f.append(el('div','ps-note',note));
-  return f;
-};
-// 内容を .page（190×262mm）に流し込む。1枚に入らない分は次のページへ送る（文字は切り捨てない）
-function layoutPages(ps, spec){
-  ps.innerHTML = '';
-  const queue = spec.blocks.map(b => ({...b})), pages = [];
-  const over = box => box.scrollHeight > box.clientHeight + 1;
-  const mk = b => {
-    if(b.h == null) return el('div','ps-text',b.text);
-    const n = el('div','ps-sec'); n.append(el('h3',null,b.h), el('div','txt',b.text)); return n;
-  };
-  const setText = (n, b, t) => { (b.h == null ? n : n.lastChild).textContent = t; };
-  do{
-    const first = pages.length === 0;
-    const page = el('div','page'), body = el('div','ps-body');
-    page.append(spec.head(!first));
-    if(first && spec.info) page.append(spec.info());
-    page.append(body, spec.foot());
-    ps.append(page); pages.push(page);
-    while(queue.length){
-      const b = queue[0], node = mk(b);
-      body.append(node);
-      if(!over(body)){ queue.shift(); continue; }
-      let lo = 0, hi = b.text.length;                     // 入る文字数を二分探索
-      while(lo < hi){
-        const mid = (lo + hi + 1) >> 1;
-        setText(node, b, b.text.slice(0, mid));
-        if(over(body)) hi = mid - 1; else lo = mid;
-      }
-      let n = lo;
-      if(n > 0){                                          // 改行か「。」の位置できれいに区切る
-        const head = b.text.slice(0, n), nl = head.lastIndexOf('\n'), jp = head.lastIndexOf('。');
-        n = nl >= n*0.5 ? nl : (jp >= n*0.5 ? jp + 1 : n);
-      }
-      if(n < 20 && body.children.length > 1){ node.remove(); break; }   // 見出しだけ残さず次のページへ
-      if(n === 0) n = 1;
-      setText(node, b, b.text.slice(0, n).replace(/\s+$/,''));
-      const rest = b.text.slice(n).replace(/^\s+/,'');
-      if(rest) queue[0] = {...b, h: b.h == null ? null : b.h.replace(/（続き）$/,'') + '（続き）', text: rest};
-      else queue.shift();
-      break;
+// チャットからこの画面に戻ってきたら、コピーされた返答を自動で取り込む
+let autoBusy = false;
+async function tryAutoImport(){
+  if(autoBusy || document.visibilityState !== 'visible' || !cur.chatWait || cfg.llm !== 'chat') return;
+  autoBusy = true;
+  try{
+    const t = await readClipboard();
+    if(!t || isPromptText(t)) return;
+    if(cur.chatWait === 'soap'){
+      if(importSoapText(t, true)){ showView('case'); showTab('soap'); }
+    }else if(cur.chatWait === 'report'){
+      if(!t.includes('【') || t.trim().length < 40) return;   // レポートらしい文章のときだけ
+      showView('case'); showTab('report'); importReportText(t);
     }
-  }while(queue.length && pages.length < 30);
-  return pages;
+  }finally{ autoBusy = false; }
 }
-function buildPrint(spec){
-  const ps = $('print');
-  ps.style.cssText = 'display:block;position:absolute;left:-9999px;top:0;visibility:hidden';   // 測るあいだだけ見えない場所に出す
-  let pages, fs = spec.fs[0];
-  for(; fs >= spec.fs[1]; fs -= 0.5){                     // 1枚に入る最大の文字サイズを探す
-    ps.style.setProperty('--fs', fs + 'pt');
-    pages = layoutPages(ps, spec);
-    if(pages.length === 1) break;
-  }
-  if(pages.length > 1){                                   // 最小でも入らないときは、読みやすい大きさで複数枚にする
-    fs = spec.fs[0]; ps.style.setProperty('--fs', fs + 'pt'); pages = layoutPages(ps, spec);
-  }
-  pages.forEach((pg, i) => { pg.querySelector('.pg').textContent = pages.length > 1 ? `${i+1}/${pages.length}` : ''; });
-  ps.style.cssText = `--fs:${fs}pt`;
-  return pages.length;
-}
+document.addEventListener('visibilitychange', tryAutoImport);
+window.addEventListener('focus', tryAutoImport);
+
+/* ================= 印刷 ================= */
+const caseDate = () => new Date(cur.created).toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric',weekday:'short'});
 $('printBtn').onclick = () => {
+  const ps = $('printSheet'); ps.innerHTML = '';
   const p = cur.patient;
-  let spec;
   if(activeTab === 'report'){
     if(!cur.report.trim()){ setStatus('先にレポートを作成してください。', true); return; }
-    spec = {
-      fs:[11, 9], blocks:[{h:null, text:cur.report}],
-      head: cont => {
-        const h = el('div','ps-head'+(cont?' cont':'')), left = el('div');
-        left.append(el('h1',null,`${p.name?p.name+'ちゃん　':''}本日の診察のご報告${cont?'（続き）':''}`));
-        if(!cont && p.owner) left.append(el('div',null,`${p.owner} 様`));
-        h.append(left, el('div',null,caseDate())); return h;
-      },
-      foot: () => footEl(`${cfg.clinic}${cfg.phone?`　TEL ${cfg.phone}`:''}`, p.vet ? `担当獣医師：${p.vet}` : '', '※本資料は本日の診察内容の要約であり、正式な診断書ではありません。')
-    };
+    const head = el('div','ps-head');
+    const left = el('div'); left.append(el('h1',null,`${p.name?p.name+'ちゃん　':''}本日の診察のご報告`), el('div',null, p.owner ? `${p.owner} 様` : ''));
+    head.append(left, el('div',null,caseDate()));
+    ps.append(head, el('div','ps-body',cur.report));
+    const foot = el('div','ps-foot');
+    foot.append(el('div',null,`${cfg.clinic}${cfg.phone?`　TEL ${cfg.phone}`:''}`), el('div',null, p.vet ? `担当獣医師：${p.vet}` : ''));
+    ps.append(foot, el('div','ps-note','※本資料は本日の診察内容の要約であり、正式な診断書ではありません。'));
   }else{
-    spec = {
-      fs:[10.5, 8.5],
-      blocks: SOAP_KEYS.filter(([k]) => k!=='memo').map(([k,l]) => ({h:l, text:cur.soap[k]||'記載なし'})),
-      head: cont => {
-        const h = el('div','ps-head'+(cont?' cont':'')), left = el('div');
-        left.append(el('h1',null,'診療記録（SOAP）'+(cont?'（続き）':'')));
-        if(!cont) left.append(el('div',null,cfg.clinic));
-        h.append(left, el('div',null,caseDate())); return h;
-      },
-      info: () => {
-        const items = [...P_LABELS.map(([k,l]) => [l, p[k]]), ['記録種別', cur.mode]].filter(([,v]) => v).map(([k,v]) => `${k}：${v}`);
-        if(!items.length) return el('div');
-        const t = el('table','ps-info'), cg = document.createElement('colgroup');
-        for(let i=0;i<3;i++){ const c = document.createElement('col'); c.style.width = '63.3mm'; cg.append(c); }
-        t.append(cg);
-        for(let i=0;i<items.length;i+=3){
-          const tr = el('tr'); tr.style.height = '5.5mm';
-          for(let j=i;j<i+3;j++) tr.append(el('td',null,items[j]||''));
-          t.append(tr);
-        }
-        return t;
-      },
-      foot: () => footEl(`AIが作成した下書きを獣医師が確認・修正したものです（${cur.status}）`, '確認者：＿＿＿＿＿＿＿＿')
-    };
+    const head = el('div','ps-head');
+    const left = el('div'); left.append(el('h1',null,'診療記録（SOAP）'), el('div',null,cfg.clinic));
+    head.append(left, el('div',null,caseDate()));
+    const info = el('div','ps-info');
+    [...P_LABELS.map(([k,l]) => [l, p[k]]), ['記録種別', cur.mode]]
+      .filter(([,v]) => v).forEach(([k,v]) => info.append(el('div',null,`${k}：${v}`)));
+    ps.append(head, info);
+    SOAP_KEYS.filter(([k]) => k!=='memo').forEach(([k,l]) => {
+      const sec = el('div','ps-sec'); sec.append(el('h3',null,l), el('div',null,cur.soap[k]||'記載なし')); ps.append(sec);
+    });
+    const foot = el('div','ps-foot');
+    foot.append(el('div',null,`AIが作成した下書きを獣医師が確認・修正したものです（${cur.status}）`), el('div',null,'確認者：＿＿＿＿＿＿＿＿'));
+    ps.append(foot);
   }
-  buildPrint(spec);
-  setTimeout(() => window.print(), 50);
+  window.print();
 };
 
 /* ================= 次の患者・履歴 ================= */
@@ -1078,7 +1199,7 @@ const blocked = () => {
 function resetInputs(){ $('chatSoapIn').value=''; $('chatSoapShow').open=false; $('chatReportShow').open=false; $('timer').textContent='00:00'; }
 $('newBtn').onclick = () => {
   if(blocked()) return;
-  saveCase(); cur = newCase(); segments = []; resetInputs();
+  saveCase(); cur = newCase(); segments = []; resetInputs(); store.set('soapAssist.current', '');
   render(); showTab('soap'); setStatus('新しいカルテを開きました'); window.scrollTo(0,0);
 };
 
@@ -1092,47 +1213,97 @@ function showView(v){
 $('navCase').onclick = () => showView('case');
 $('navHist').onclick = () => { saveCase(); showView('hist'); };
 
+const jaCollator = new Intl.Collator('ja');
+const dxKey = s => s.replace(/\s*[（(]\s*疑い\s*[）)]\s*$/, '').trim();   // 「膵炎（疑い）」は「膵炎」の見出しにまとめる
+const byDateDesc = (a, b) => (b.created||'').localeCompare(a.created||'');
+const histDate = iso => {
+  const d = new Date(iso), sameYear = d.getFullYear() === new Date().getFullYear();
+  return d.toLocaleString('ja-JP', {...(sameYear ? {} : {year:'numeric'}), month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit'});
+};
+
+function histRow(c){
+  const row = el('div','hist-row');
+  const item = el('button','hist-item');
+  const top = el('div','hist-top');
+  top.append(el('span',null,histDate(c.created)),
+    el('span','badge mode',c.mode), el('span','badge'+(c.status==='確認済み'?' done':''),c.status));
+  if(c.durationSec) top.append(el('span',null,fmt(c.durationSec)));
+  item.append(top, el('div','hist-name',`${c.patient.name||'（患者名未入力）'}${c.patient.owner?`　${c.patient.owner}`:''}${c.patient.vet?`　担当 ${c.patient.vet}`:''}`));
+  const dx = c.dx||[], rx = c.rx||[];
+  if(dx.length || rx.length){
+    const t = el('div','hist-tags');
+    dx.forEach(d => t.append(el('span','tag',d)));
+    rx.forEach(r => t.append(el('span','tag rx',r)));
+    item.append(t);
+  }
+  item.append(el('div','hist-snip',(c.soap.S||c.transcript||'').replace(/\s+/g,' ').slice(0,80)));
+  item.onclick = () => {
+    if(blocked()) return;
+    saveCase(); cur = {...newCase(), ...JSON.parse(JSON.stringify(c))}; delete cur.updated; segments = []; resetInputs();
+    store.set('soapAssist.current', cur.id);
+    render(); showTab('soap'); showView('case');
+    setStatus('履歴のカルテを開きました。「録音を追加」で追記できます。');
+  };
+  const del = el('button','btn small','削除');
+  del.onclick = () => {
+    if(!confirm(`${c.patient.name||'このカルテ'}を履歴から削除します。元に戻せません。`)) return;
+    store.set('soapAssist.history', store.get('soapAssist.history', []).filter(x => x.id!==c.id));
+    if(cur.id===c.id){ cur = newCase(); segments=[]; render(); }
+    renderHist();
+  };
+  row.append(item, del);
+  return row;
+}
+function histGroupHead(title, n){
+  const h = el('div','hist-group'); h.append(el('span',null,title), el('span','sub',`${n}件`)); return h;
+}
+
 function renderHist(){
-  const q = $('histSearch').value.trim(), f = $('histFilter').value, noName = $('histNoName').value;
+  const q = $('histSearch').value.trim(), f = $('histFilter').value, noName = $('histNoName').value, sort = $('histSort').value;
+  store.set('soapAssist.histSort', sort);
   const list = store.get('soapAssist.history', []).filter(c =>
     (!f || c.status===f) && (!noName || !c.patient.name) &&
-    (!q || [c.patient.name,c.patient.owner,c.patient.vet].some(x => (x||'').includes(q))));
+    (!q || [c.patient.name, c.patient.owner, c.patient.vet, ...(c.dx||[]), ...(c.rx||[])].some(x => (x||'').includes(q))));
   const box = $('histList'); box.innerHTML = '';
   if(!list.length){ box.append(el('div','empty','該当するカルテはありません')); return; }
-  list.forEach(c => {
-    const row = el('div','hist-row');
-    const item = el('button','hist-item');
-    const top = el('div','hist-top');
-    top.append(el('span',null,new Date(c.created).toLocaleString('ja-JP',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})),
-      el('span','badge mode',c.mode), el('span','badge'+(c.status==='確認済み'?' done':''),c.status));
-    if(c.durationSec) top.append(el('span',null,fmt(c.durationSec)));
-    item.append(top, el('div','hist-name',`${c.patient.name||'（患者名未入力）'}${c.patient.owner?`　${c.patient.owner}`:''}${c.patient.vet?`　担当 ${c.patient.vet}`:''}`),
-      el('div','hist-snip',(c.soap.S||c.transcript||'').replace(/\s+/g,' ').slice(0,80)));
-    item.onclick = () => {
-      if(blocked()) return;
-      saveCase(); cur = {...newCase(), ...JSON.parse(JSON.stringify(c))}; delete cur.updated; segments = []; resetInputs();
-      render(); showTab('soap'); showView('case');
-      setStatus('履歴のカルテを開きました。「録音を追加」で追記できます。');
-    };
-    const del = el('button','btn small','削除');
-    del.onclick = () => {
-      if(!confirm(`${c.patient.name||'このカルテ'}を履歴から削除します。元に戻せません。`)) return;
-      store.set('soapAssist.history', store.get('soapAssist.history', []).filter(x => x.id!==c.id));
-      if(cur.id===c.id){ cur = newCase(); segments=[]; render(); }
-      renderHist();
-    };
-    row.append(item, del); box.append(row);
-  });
+
+  if(sort === 'dx' || sort === 'rx'){
+    // 名前ごとの見出しの下に並べる（1件が複数の見出しに出る）
+    const groups = new Map(), none = [];
+    list.forEach(c => {
+      const keys = [...new Set((c[sort]||[]).map(s => sort==='dx' ? dxKey(s) : s.trim()).filter(Boolean))];
+      if(!keys.length){ none.push(c); return; }
+      keys.forEach(k => { if(!groups.has(k)) groups.set(k, []); groups.get(k).push(c); });
+    });
+    [...groups.keys()].sort(jaCollator.compare).forEach(k => {
+      box.append(histGroupHead(k, groups.get(k).length));
+      groups.get(k).sort(byDateDesc).forEach(c => box.append(histRow(c)));
+    });
+    if(none.length){
+      box.append(histGroupHead(sort==='dx' ? '診断名 未登録' : '処方薬 未登録', none.length));
+      none.sort(byDateDesc).forEach(c => box.append(histRow(c)));
+    }
+    return;
+  }
+  const sorted = [...list];
+  if(sort === 'dateAsc') sorted.sort((a,b) => -byDateDesc(a,b));
+  else if(sort === 'name') sorted.sort((a,b) =>
+    (!a.patient.name) - (!b.patient.name) || jaCollator.compare(a.patient.name||'', b.patient.name||'') || byDateDesc(a,b));
+  else sorted.sort(byDateDesc);
+  sorted.forEach(c => box.append(histRow(c)));
 }
+try{ const s = store.get('soapAssist.histSort', 'dateDesc'); if([...$('histSort').options].some(o => o.value===s)) $('histSort').value = s; }catch(e){}
+$('histSort').onchange = renderHist;
 $('histSearch').oninput = renderHist;
 $('histFilter').onchange = renderHist;
 $('histNoName').onchange = renderHist;
 $('clearHistBtn').onclick = () => {
   if(!confirm('この端末に保存された履歴をすべて削除します。元に戻せません。')) return;
-  store.set('soapAssist.history', []); cur = newCase(); segments=[]; render(); renderHist();
+  store.set('soapAssist.history', []); store.set('soapAssist.current', ''); cur = newCase(); segments=[]; render(); renderHist();
 };
 
 render();
+if(cur.chatWait){ showTab(cur.chatWait); tryAutoImport(); }
 </script>
 </body>
 </html>
