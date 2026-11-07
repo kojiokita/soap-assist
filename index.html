@@ -92,22 +92,32 @@ dialog label{margin-bottom:10px}
 dialog .more label:last-child{margin-bottom:4px}
 .check{display:flex;gap:8px;align-items:center;color:var(--ink)}
 .check input{width:auto;margin:0}
-#printSheet{display:none}
+#print{display:none;--fs:10.5pt;font-size:var(--fs);line-height:1.6;color:#000;background:#fff}
+#print,#print *{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+#print .page{width:190mm;height:262mm;margin:0 auto;overflow:hidden;display:flex;flex-direction:column;
+  break-inside:avoid;page-break-inside:avoid;break-after:page;page-break-after:always}
+#print .page:last-child{break-after:auto;page-break-after:auto}
+#print h1{font-size:15pt;margin:0 0 1mm;line-height:1.3}
+#print .ps-head{flex:none;display:flex;justify-content:space-between;align-items:flex-end;border-bottom:1.5pt solid #000;padding-bottom:2mm;margin-bottom:4mm}
+#print .ps-head.cont{margin-bottom:3mm}
+#print .ps-head.cont h1{font-size:12pt}
+#print .ps-info{flex:none;table-layout:fixed;width:190mm;border-collapse:collapse;margin-bottom:4mm}
+#print .ps-info td{padding:0 2mm 0 0;font-size:10pt;vertical-align:top}
+#print .ps-body{flex:1 1 auto;min-height:0;overflow:hidden}
+#print .ps-sec + .ps-sec{margin-top:4mm}
+#print .ps-sec h3{font-size:11pt;margin:0 0 1mm;border-left:3pt solid #000;padding-left:2mm;background:#eee;line-height:1.5}
+#print .ps-sec .txt{white-space:pre-wrap;padding-left:5mm}
+#print .ps-text{white-space:pre-wrap;line-height:1.85}
+#print .ps-foot{flex:none;border-top:.5pt solid #000;padding-top:2mm;font-size:9pt}
+#print .ps-foot-row{display:flex;justify-content:space-between;gap:6mm}
+#print .ps-foot-row > :first-child{flex:1}
+#print .ps-note{margin-top:1mm}
 @media (max-width:420px){#recBtn{width:96px;height:96px}#timer{font-size:2rem}.seg button{padding:8px 12px}}
+@page{size:A4 portrait;margin:8mm}
 @media print{
-  @page{size:A4;margin:14mm}
-  .app,#bottomBar,dialog{display:none!important}
-  body{background:#fff}
-  #printSheet{display:block;font-size:10.5pt;line-height:1.6;color:#000}
-  #printSheet h1{font-size:15pt;margin:0 0 1mm}
-  .ps-head{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:1.5pt solid #000;padding-bottom:2mm;margin-bottom:4mm}
-  .ps-info{display:grid;grid-template-columns:repeat(3,1fr);gap:1mm 6mm;margin-bottom:5mm}
-  .ps-sec{margin-bottom:4mm;break-inside:avoid}
-  .ps-sec h3{font-size:11pt;margin:0 0 1mm;border-left:3pt solid #000;padding-left:2mm}
-  .ps-sec div{white-space:pre-wrap;padding-left:5mm}
-  .ps-body{white-space:pre-wrap;font-size:11pt;line-height:1.85}
-  .ps-foot{margin-top:8mm;border-top:.5pt solid #000;padding-top:2mm;display:flex;justify-content:space-between;gap:6mm;font-size:9pt}
-  .ps-note{font-size:9pt;margin-top:2mm}
+  html,body{background:#fff;margin:0}
+  body > *:not(#print){display:none !important}
+  #print{display:block}
 }
 </style>
 </head>
@@ -294,7 +304,7 @@ dialog .more label:last-child{margin-bottom:4px}
   <div class="btns"><button class="btn primary" id="cfgSave">保存</button><button class="btn" id="cfgClose">閉じる</button></div>
 </dialog>
 
-<div id="printSheet"></div>
+<div id="print"></div>
 
 <script>
 const $ = id => document.getElementById(id);
@@ -947,36 +957,116 @@ $('chatReportPaste').onclick = async () => {
   setStatus('レポートを貼り付けました。内容を確認してから印刷してください。');
 };
 
-/* ================= 印刷 ================= */
+/* ================= 印刷（A4縦・印刷専用の入れ物 #print に作り直す） ================= */
 const caseDate = () => new Date(cur.created).toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric',weekday:'short'});
+const footEl = (l, r, note) => {
+  const f = el('div','ps-foot'), row = el('div','ps-foot-row');
+  row.append(el('div',null,l), el('div',null,r), el('div','pg','9/9'));
+  f.append(row); if(note) f.append(el('div','ps-note',note));
+  return f;
+};
+// 内容を .page（190×262mm）に流し込む。1枚に入らない分は次のページへ送る（文字は切り捨てない）
+function layoutPages(ps, spec){
+  ps.innerHTML = '';
+  const queue = spec.blocks.map(b => ({...b})), pages = [];
+  const over = box => box.scrollHeight > box.clientHeight + 1;
+  const mk = b => {
+    if(b.h == null) return el('div','ps-text',b.text);
+    const n = el('div','ps-sec'); n.append(el('h3',null,b.h), el('div','txt',b.text)); return n;
+  };
+  const setText = (n, b, t) => { (b.h == null ? n : n.lastChild).textContent = t; };
+  do{
+    const first = pages.length === 0;
+    const page = el('div','page'), body = el('div','ps-body');
+    page.append(spec.head(!first));
+    if(first && spec.info) page.append(spec.info());
+    page.append(body, spec.foot());
+    ps.append(page); pages.push(page);
+    while(queue.length){
+      const b = queue[0], node = mk(b);
+      body.append(node);
+      if(!over(body)){ queue.shift(); continue; }
+      let lo = 0, hi = b.text.length;                     // 入る文字数を二分探索
+      while(lo < hi){
+        const mid = (lo + hi + 1) >> 1;
+        setText(node, b, b.text.slice(0, mid));
+        if(over(body)) hi = mid - 1; else lo = mid;
+      }
+      let n = lo;
+      if(n > 0){                                          // 改行か「。」の位置できれいに区切る
+        const head = b.text.slice(0, n), nl = head.lastIndexOf('\n'), jp = head.lastIndexOf('。');
+        n = nl >= n*0.5 ? nl : (jp >= n*0.5 ? jp + 1 : n);
+      }
+      if(n < 20 && body.children.length > 1){ node.remove(); break; }   // 見出しだけ残さず次のページへ
+      if(n === 0) n = 1;
+      setText(node, b, b.text.slice(0, n).replace(/\s+$/,''));
+      const rest = b.text.slice(n).replace(/^\s+/,'');
+      if(rest) queue[0] = {...b, h: b.h == null ? null : b.h.replace(/（続き）$/,'') + '（続き）', text: rest};
+      else queue.shift();
+      break;
+    }
+  }while(queue.length && pages.length < 30);
+  return pages;
+}
+function buildPrint(spec){
+  const ps = $('print');
+  ps.style.cssText = 'display:block;position:absolute;left:-9999px;top:0;visibility:hidden';   // 測るあいだだけ見えない場所に出す
+  let pages, fs = spec.fs[0];
+  for(; fs >= spec.fs[1]; fs -= 0.5){                     // 1枚に入る最大の文字サイズを探す
+    ps.style.setProperty('--fs', fs + 'pt');
+    pages = layoutPages(ps, spec);
+    if(pages.length === 1) break;
+  }
+  if(pages.length > 1){                                   // 最小でも入らないときは、読みやすい大きさで複数枚にする
+    fs = spec.fs[0]; ps.style.setProperty('--fs', fs + 'pt'); pages = layoutPages(ps, spec);
+  }
+  pages.forEach((pg, i) => { pg.querySelector('.pg').textContent = pages.length > 1 ? `${i+1}/${pages.length}` : ''; });
+  ps.style.cssText = `--fs:${fs}pt`;
+  return pages.length;
+}
 $('printBtn').onclick = () => {
-  const ps = $('printSheet'); ps.innerHTML = '';
   const p = cur.patient;
+  let spec;
   if(activeTab === 'report'){
     if(!cur.report.trim()){ setStatus('先にレポートを作成してください。', true); return; }
-    const head = el('div','ps-head');
-    const left = el('div'); left.append(el('h1',null,`${p.name?p.name+'ちゃん　':''}本日の診察のご報告`), el('div',null, p.owner ? `${p.owner} 様` : ''));
-    head.append(left, el('div',null,caseDate()));
-    ps.append(head, el('div','ps-body',cur.report));
-    const foot = el('div','ps-foot');
-    foot.append(el('div',null,`${cfg.clinic}${cfg.phone?`　TEL ${cfg.phone}`:''}`), el('div',null, p.vet ? `担当獣医師：${p.vet}` : ''));
-    ps.append(foot, el('div','ps-note','※本資料は本日の診察内容の要約であり、正式な診断書ではありません。'));
+    spec = {
+      fs:[11, 9], blocks:[{h:null, text:cur.report}],
+      head: cont => {
+        const h = el('div','ps-head'+(cont?' cont':'')), left = el('div');
+        left.append(el('h1',null,`${p.name?p.name+'ちゃん　':''}本日の診察のご報告${cont?'（続き）':''}`));
+        if(!cont && p.owner) left.append(el('div',null,`${p.owner} 様`));
+        h.append(left, el('div',null,caseDate())); return h;
+      },
+      foot: () => footEl(`${cfg.clinic}${cfg.phone?`　TEL ${cfg.phone}`:''}`, p.vet ? `担当獣医師：${p.vet}` : '', '※本資料は本日の診察内容の要約であり、正式な診断書ではありません。')
+    };
   }else{
-    const head = el('div','ps-head');
-    const left = el('div'); left.append(el('h1',null,'診療記録（SOAP）'), el('div',null,cfg.clinic));
-    head.append(left, el('div',null,caseDate()));
-    const info = el('div','ps-info');
-    [...P_LABELS.map(([k,l]) => [l, p[k]]), ['記録種別', cur.mode]]
-      .filter(([,v]) => v).forEach(([k,v]) => info.append(el('div',null,`${k}：${v}`)));
-    ps.append(head, info);
-    SOAP_KEYS.filter(([k]) => k!=='memo').forEach(([k,l]) => {
-      const sec = el('div','ps-sec'); sec.append(el('h3',null,l), el('div',null,cur.soap[k]||'記載なし')); ps.append(sec);
-    });
-    const foot = el('div','ps-foot');
-    foot.append(el('div',null,`AIが作成した下書きを獣医師が確認・修正したものです（${cur.status}）`), el('div',null,'確認者：＿＿＿＿＿＿＿＿'));
-    ps.append(foot);
+    spec = {
+      fs:[10.5, 8.5],
+      blocks: SOAP_KEYS.filter(([k]) => k!=='memo').map(([k,l]) => ({h:l, text:cur.soap[k]||'記載なし'})),
+      head: cont => {
+        const h = el('div','ps-head'+(cont?' cont':'')), left = el('div');
+        left.append(el('h1',null,'診療記録（SOAP）'+(cont?'（続き）':'')));
+        if(!cont) left.append(el('div',null,cfg.clinic));
+        h.append(left, el('div',null,caseDate())); return h;
+      },
+      info: () => {
+        const items = [...P_LABELS.map(([k,l]) => [l, p[k]]), ['記録種別', cur.mode]].filter(([,v]) => v).map(([k,v]) => `${k}：${v}`);
+        if(!items.length) return el('div');
+        const t = el('table','ps-info'), cg = document.createElement('colgroup');
+        for(let i=0;i<3;i++){ const c = document.createElement('col'); c.style.width = '63.3mm'; cg.append(c); }
+        t.append(cg);
+        for(let i=0;i<items.length;i+=3){
+          const tr = el('tr'); tr.style.height = '5.5mm';
+          for(let j=i;j<i+3;j++) tr.append(el('td',null,items[j]||''));
+          t.append(tr);
+        }
+        return t;
+      },
+      foot: () => footEl(`AIが作成した下書きを獣医師が確認・修正したものです（${cur.status}）`, '確認者：＿＿＿＿＿＿＿＿')
+    };
   }
-  window.print();
+  buildPrint(spec);
+  setTimeout(() => window.print(), 50);
 };
 
 /* ================= 次の患者・履歴 ================= */
